@@ -34,7 +34,7 @@ export default function Home() {
     width: number;
     height: number;
   } | null>(null);
-  const [projectName, setProjectName] = useState('untitled');
+  const [projectName, setProjectName] = useState('Untitled');
   const [isEditingName, setIsEditingName] = useState(false);
   const [projectId] = useState<string>(() => {
     // Generate a UUID for the project session
@@ -477,10 +477,14 @@ export default function Home() {
     try {
       const canvasImageData = await exportCanvasImage();
 
+      // Determine type: "generate" for agent mode (no canvas content), "edit" for ask mode (has canvas content)
+      const requestType = canvasImageData ? 'edit' : 'generate';
+
       const data = await generateImage({
         prompt: transcript,
         image_data: canvasImageData,
         project_id: projectId,
+        type: requestType,
       });
 
       setGeneratedImage(data.image_data);
@@ -501,7 +505,7 @@ export default function Home() {
     <div className="flex h-full w-full bg-white">
       {/* Left Side - Drawing Canvas */}
       <div className="flex flex-1 flex-col bg-white">
-        <div className="border-b border-gray-200 bg-white p-2 pl-4 text-left text-sm font-medium text-gray-900">
+        <div className="border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
           <span className="text-gray-500">Projects/</span>
           {isEditingName ? (
             <input

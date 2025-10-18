@@ -4,6 +4,7 @@ export interface GenerateImageRequest {
   prompt: string;
   image_data?: string | null;
   project_id: string;
+  type: 'generate' | 'edit';
 }
 
 export interface GenerateImageResponse {
