@@ -24,6 +24,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [imageUsed, setImageUsed] = useState(false);
+  const [projectId] = useState<string>(() => {
+    // Generate a UUID for the project session
+    return '6e8dec9f-4d2c-4b7e-9053-28e5ebe4aeb9';
+    //return crypto.randomUUID();
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -258,6 +263,7 @@ export default function Home() {
       const data = await generateImage({
         prompt: transcript,
         image_data: canvasImageData,
+        project_id: projectId,
       });
 
       setGeneratedImage(data.image_data);

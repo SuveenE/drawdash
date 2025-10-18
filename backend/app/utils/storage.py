@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 async def upload_image_to_storage(
     supabase_client: Client,
     image_data: str,
-    bucket_name: str = "whisperdraw",
+    bucket_name: str = "whisprdraw",
     folder: str = "image_pairs",
 ) -> Tuple[str, str, int, int]:
     """
@@ -49,7 +49,7 @@ async def upload_image_to_storage(
         )
 
         # Get public URL
-        public_url_response = supabase_client.storage.from_(bucket_name).get_public_url(
+        public_url_response = await supabase_client.storage.from_(bucket_name).get_public_url(
             filename
         )
 
