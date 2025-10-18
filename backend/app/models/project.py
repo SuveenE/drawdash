@@ -14,6 +14,9 @@ class Project(BaseModel):
     snapshot: Optional[Dict[str, Any]] = Field(
         default=None, description="The snapshot data for the project."
     )
+    icon_url: Optional[str] = Field(
+        default=None, description="The URL of the project's 3D icon."
+    )
     created_at: datetime = Field(
         description="The timestamp when the project was created."
     )
@@ -44,6 +47,9 @@ class ProjectUpdateRequest(BaseModel):
     )
     snapshot: Optional[Dict[str, Any]] = Field(
         default=None, description="The snapshot data for the project."
+    )
+    icon_url: Optional[str] = Field(
+        default=None, description="The URL of the project's 3D icon."
     )
 
 

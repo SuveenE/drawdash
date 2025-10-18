@@ -3,11 +3,91 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 
 from app.models.image import ImageGenerationRequest, ImageGenerationResponse
+from app.models.project import IconGenerationRequest, ProjectUpdateRequest
 from app.services.image import ImageService
+from app.services.project import ProjectService
 from app.utils.database import db_client
-from app.utils.storage import save_image_pair_to_db, upload_image_to_storage
+from app.utils.storage import (
+    download_and_upload_image_from_url,
+    save_image_pair_to_db,
+    upload_image_to_storage,
+)
 
 log = logging.getLogger(__name__)
+
+
+async def generate_and_save_project_icon(
+    authorization: str,
+    project_id: str,
+):
+    """
+    Background task to generate and save a 3D icon for the project on first image generation.
+    """
+    try:
+        log.info(f"Starting background task to generate icon for project {project_id}")
+
+        # Extract token from authorization header
+        token = authorization.replace("Bearer ", "") if authorization else ""
+
+        # Get database client
+        supabase_client = await db_client(token=token)
+
+        # Initialize project service
+        project_service = ProjectService()
+
+        # Check if this is the first image generation
+        is_first = await project_service.check_if_first_image_generation(
+            supabase_client=supabase_client,
+            project_id=project_id,
+        )
+
+        if not is_first:
+            log.info(f"Not the first image generation for project {project_id}, skipping icon generation")
+            return
+
+        # Get project details
+        project = await project_service.get_project_by_id(
+            supabase_client=supabase_client,
+            project_id=project_id,
+        )
+
+        # Skip if project already has an icon
+        if project.icon_url:
+            log.info(f"Project {project_id} already has an icon, skipping generation")
+            return
+
+        # Generate icon prompt from project name
+        icon_prompt = project.name if project.name else "abstract 3D icon"
+        log.info(f"Generating 3D icon for project with prompt: {icon_prompt}")
+
+        # Generate the 3D icon
+        icon_request = IconGenerationRequest(
+            prompt=icon_prompt,
+            style="3D render, isometric, clean background, modern, professional"
+        )
+        icon_response = await project_service.generate_3d_icon(icon_request)
+
+        # Download and upload the icon to Supabase storage
+        icon_url = await download_and_upload_image_from_url(
+            supabase_client=supabase_client,
+            image_url=icon_response.image_url,
+            folder="project_icons",
+        )
+
+        # Update the project with the icon URL
+        update_request = ProjectUpdateRequest(icon_url=icon_url)
+        await project_service.update_project(
+            supabase_client=supabase_client,
+            project_id=project_id,
+            user_id=project.user_id,
+            project_data=update_request,
+        )
+
+        log.info(f"Successfully generated and saved icon for project {project_id}")
+
+    except Exception as e:
+        log.error(f"Error in background task generate_and_save_project_icon: {e}")
+        # Don't raise - background tasks should not affect the response
 
 
 async def save_images_to_database(
@@ -103,6 +183,13 @@ class ImageController:
                     input=input
                 )
                 log.info("Image generation completed successfully")
+
+                # Add background task to generate and save project icon (on first generation)
+                background_tasks.add_task(
+                    generate_and_save_project_icon,
+                    authorization=authorization,
+                    project_id=input.project_id,
+                )
 
                 # Add background task to save images to database
                 background_tasks.add_task(

@@ -5,14 +5,89 @@ from uuid import uuid4
 import fal_client
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (IconGenerationRequest, IconGenerationResponse,
-                                Project, ProjectCreateRequest,
-                                ProjectUpdateRequest)
+from app.models.project import (
+    IconGenerationRequest,
+    IconGenerationResponse,
+    Project,
+    ProjectCreateRequest,
+    ProjectUpdateRequest,
+)
 
 log = logging.getLogger(__name__)
 
 
 class ProjectService:
+    async def get_project_by_id(
+        self, supabase_client: Client, project_id: str
+    ) -> Project:
+        """
+        Fetch a single project by ID.
+
+        Args:
+            supabase_client: The Supabase client instance
+            project_id: The project ID to fetch
+
+        Returns:
+            Project object
+        """
+        log.info(f"Fetching project with id: {project_id}")
+
+        try:
+            # Query the projects table
+            response = (
+                await supabase_client.table("projects")
+                .select("*")
+                .eq("id", project_id)
+                .single()
+                .execute()
+            )
+
+            if not response.data:
+                raise RuntimeError(f"Project not found: {project_id}")
+
+            project = Project(**response.data)
+            log.info(f"Found project: {project.id}")
+
+            return project
+
+        except Exception as e:
+            log.error(f"Error fetching project {project_id}: {e}")
+            raise RuntimeError(f"Failed to fetch project: {e}")
+
+    async def check_if_first_image_generation(
+        self, supabase_client: Client, project_id: str
+    ) -> bool:
+        """
+        Check if this is the first image generation for a project.
+
+        Args:
+            supabase_client: The Supabase client instance
+            project_id: The project ID to check
+
+        Returns:
+            True if this is the first image generation, False otherwise
+        """
+        log.info(f"Checking if first image generation for project: {project_id}")
+
+        try:
+            # Count the number of image pairs for this project
+            response = (
+                await supabase_client.table("image_pairs")
+                .select("id", count="exact")
+                .eq("project_id", project_id)
+                .execute()
+            )
+
+            count = response.count if response.count is not None else 0
+            is_first = count == 0
+            log.info(f"Project {project_id} has {count} image pairs. Is first: {is_first}")
+
+            return is_first
+
+        except Exception as e:
+            log.error(f"Error checking image pairs for project {project_id}: {e}")
+            raise RuntimeError(f"Failed to check image pairs: {e}")
+
     async def get_projects_by_user_id(
         self, supabase_client: Client, user_id: str
     ) -> List[Project]:
@@ -124,6 +199,8 @@ class ProjectService:
                 update_data["description"] = project_data.description
             if project_data.snapshot is not None:
                 update_data["snapshot"] = project_data.snapshot
+            if project_data.icon_url is not None:
+                update_data["icon_url"] = project_data.icon_url
 
             if not update_data:
                 raise RuntimeError("No fields to update")
