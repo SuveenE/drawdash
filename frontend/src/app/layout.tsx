@@ -12,7 +12,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'WhisprDraw',
+  title: 'DrawDash',
   description: '',
   icons: {
     icon: '/logo.png',

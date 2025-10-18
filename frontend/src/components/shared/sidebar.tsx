@@ -172,12 +172,12 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
                 <div className="flex items-center space-x-2">
                   <Image
                     src="/logo.png"
-                    alt="WhisprDraw Logo"
+                    alt="DrawDash Logo"
                     width={32}
                     height={32}
                     className="h-8 w-8 object-contain"
                   />
-                  <span className="text-xl font-bold text-gray-900">WhisprDraw</span>
+                  <span className="text-xl font-bold text-gray-900">DrawDash</span>
                 </div>
               </div>
               {/* Mobile close button */}
@@ -242,7 +242,7 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
             <div className="flex flex-col items-center pt-8 pb-6">
               <Image
                 src="/logo.png"
-                alt="WhisprDraw Logo"
+                alt="DrawDash Logo"
                 width={32}
                 height={32}
                 className="h-8 w-8 object-contain"
@@ -315,12 +315,12 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
             <div className="flex items-center space-x-2">
               <Image
                 src="/logo.png"
-                alt="WhisprDraw Logo"
+                alt="DrawDash Logo"
                 width={24}
                 height={24}
                 className="h-6 w-6 object-contain"
               />
-              <span className="text-lg font-bold text-gray-900">WhisprDraw</span>
+              <span className="text-lg font-bold text-gray-900">DrawDash</span>
             </div>
           </div>
         </div>
