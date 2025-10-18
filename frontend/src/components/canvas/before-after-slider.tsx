@@ -163,7 +163,7 @@ export function BeforeAfterSlider({
           <X className="h-4 w-4" />
         </Button>
 
-        {/* Before Image (Background) - Current canvas */}
+        {/* Before Image (Background) - Current canvas - on the left */}
         <div className="absolute inset-0 bg-white">
           <img src={beforeImageUrl} alt="Before" className="h-full w-full object-contain" />
           <div className="absolute bottom-3 left-3 rounded bg-gray-700/80 px-2 py-1 text-xs font-medium text-white">
@@ -171,16 +171,19 @@ export function BeforeAfterSlider({
           </div>
         </div>
 
-        {/* After Image (Clipped) - Reveals as slider moves */}
+        {/* After Image (Clipped) - AI Generated - on the right */}
         {afterImageUrl && (
           <div
             className="absolute inset-0 overflow-hidden bg-white"
             style={{
-              clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-              opacity: sliderPosition > 0 ? 1 : 0,
+              clipPath: `inset(0 ${sliderPosition}% 0 0)`,
+              opacity: sliderPosition < 100 ? 1 : 0,
             }}
           >
             <img src={afterImageUrl} alt="After" className="h-full w-full object-contain" />
+            <div className="absolute right-3 bottom-3 rounded bg-blue-600/80 px-2 py-1 text-xs font-medium text-white">
+              Generated
+            </div>
           </div>
         )}
 

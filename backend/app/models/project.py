@@ -55,6 +55,8 @@ class ProjectUpdateRequest(BaseModel):
 
 class IconGenerationRequest(BaseModel):
     prompt: str = Field(description="Text prompt describing the 3D icon to generate.")
+    project_id: str = Field(description="The ID of the project to generate icon for.")
+    user_id: str = Field(description="The user ID who owns the project.")
     style: Optional[str] = Field(
         default="3D render, isometric, clean background",
         description="Style modifier for the icon generation.",
@@ -63,6 +65,7 @@ class IconGenerationRequest(BaseModel):
 
 class IconGenerationResponse(BaseModel):
     image_url: str = Field(description="URL of the generated 3D icon image.")
+    description: str = Field(description="Generated topic description for the project.")
     image_data: Optional[str] = Field(
         default=None, description="Base64 encoded image data if requested."
     )

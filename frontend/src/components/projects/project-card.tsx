@@ -15,7 +15,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className="cursor-pointer overflow-hidden rounded-lg border border-gray-200 transition-shadow hover:shadow-md">
         <div className="relative h-48 w-full bg-gradient-to-br from-blue-50 to-purple-50">
           <Image
-            src="/projects/internet.png"
+            src={project.icon_url || '/projects/internet.png'}
             alt="Project thumbnail"
             fill
             className="object-contain p-4"

@@ -69,11 +69,22 @@ export default function ProjectDetailPage() {
 
       {/* Project Header */}
       {project && (
-        <div className="mb-6">
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">{project.name}</h1>
-          {project.description && <p className="text-gray-600">{project.description}</p>}
-          <div className="mt-2 text-sm text-gray-500">
-            <p>Last Updated: {new Date(project.updated_at).toLocaleDateString()}</p>
+        <div className="mb-6 flex items-start gap-6">
+          {project.icon_url && (
+            <div className="flex-shrink-0">
+              <img
+                src={project.icon_url}
+                alt={`${project.name} icon`}
+                className="h-28 w-28 rounded-lg object-cover"
+              />
+            </div>
+          )}
+          <div className="flex-1">
+            <h1 className="mb-2 text-3xl font-bold text-gray-900">{project.name}</h1>
+            {project.description && <p className="text-gray-600">{project.description}</p>}
+            <div className="mt-2 text-sm text-gray-500">
+              <p>Last Updated: {new Date(project.updated_at).toLocaleDateString()}</p>
+            </div>
           </div>
         </div>
       )}

@@ -53,9 +53,13 @@ async def generate_and_save_project_icon(
         # Generate the 3D icon
         icon_request = IconGenerationRequest(
             prompt=icon_prompt,
+            project_id=project_id,
+            user_id=project.user_id,
             style="3D render, isometric, clean background, modern, professional graphic",
         )
-        icon_response = await project_service.generate_3d_icon(icon_request)
+        icon_response = await project_service.generate_3d_icon(
+            supabase_client=supabase_client, request=icon_request
+        )
 
         # Download and upload the icon to Supabase storage
         icon_url = await download_and_upload_image_from_url(

@@ -3,6 +3,7 @@ from typing import Dict, List
 from uuid import uuid4
 
 import fal_client
+from openai import OpenAI
 from supabase._async.client import AsyncClient as Client
 
 from app.models.project import (
@@ -231,22 +232,25 @@ class ProjectService:
             raise RuntimeError(f"Failed to update project: {e}")
 
     async def generate_3d_icon(
-        self, request: IconGenerationRequest
+        self, supabase_client: Client, request: IconGenerationRequest
     ) -> IconGenerationResponse:
         """
-        Generate a 3D icon using Fal AI.
+        Generate a 3D icon using Fal AI and a topic description, then save both to the database.
 
         Args:
-            request: The icon generation request containing prompt and style
+            supabase_client: The Supabase client instance
+            request: The icon generation request containing prompt, project_id, user_id, and style
 
         Returns:
-            IconGenerationResponse containing the generated icon URL and data
+            IconGenerationResponse containing the generated icon URL, description, and optional image data
         """
-        log.info(f"Generating 3D icon with prompt: {request.prompt}")
+        log.info(
+            f"Generating 3D icon and description for project: {request.project_id}"
+        )
 
         try:
             # Construct the full prompt with style modifiers
-            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D icon png with the following style: {request.style}"
+            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D smooth icon png with the following style: {request.style}. Also make sure you don't include text in the image."
 
             # Define callback to log queue updates
             def on_queue_update(update):
@@ -255,9 +259,9 @@ class ProjectService:
                         log.info(f"Fal AI: {log_entry['message']}")
 
             # Call Fal AI to generate the icon using the queue system
-            # Using FLUX Pro for high-quality 3D icon generation
+            # Using nano-banana for high-quality 3D icon generation with example image
             result = fal_client.subscribe(
-                "fal-ai/nano-banana",
+                "fal-ai/nano-banana/",
                 arguments={
                     "prompt": full_prompt,
                 },
@@ -274,11 +278,154 @@ class ProjectService:
             image_url = result["images"][0]["url"]
             log.info(f"Successfully generated 3D icon: {image_url}")
 
+            # Remove background from the generated icon
+            log.info("Removing background from generated icon")
+            rembg_result = fal_client.subscribe(
+                "fal-ai/imageutils/rembg",
+                arguments={
+                    "image_url": image_url,
+                },
+                with_logs=True,
+                on_queue_update=on_queue_update,
+            )
+
+            # Validate rembg response
+            if not rembg_result or "image" not in rembg_result:
+                log.error(f"Invalid response from rembg API: {rembg_result}")
+                raise RuntimeError("Failed to remove background from image")
+
+            # Use the background-removed image URL
+            image_url = rembg_result["image"]["url"]
+            log.info(f"Successfully removed background: {image_url}")
+
+            # Generate topic description
+            log.info(f"Generating topic description for project: {request.project_id}")
+            topic_description = await self.generate_topic_description(
+                supabase_client=supabase_client, project_id=request.project_id
+            )
+            log.info(f"Successfully generated topic description: {topic_description}")
+
+            # Update the project with both icon URL and description
+            log.info(f"Updating project {request.project_id} with icon and description")
+            update_data = {
+                "icon_url": image_url,
+                "description": topic_description,
+            }
+
+            response = (
+                await supabase_client.table("projects")
+                .update(update_data)
+                .eq("id", request.project_id)
+                .eq("user_id", request.user_id)
+                .execute()
+            )
+
+            if not response.data or len(response.data) == 0:
+                log.error(f"Failed to update project {request.project_id}")
+                raise RuntimeError(
+                    "Failed to update project: Project not found or unauthorized"
+                )
+
+            log.info(
+                f"Successfully updated project {request.project_id} with icon and description"
+            )
+
             return IconGenerationResponse(
                 image_url=image_url,
+                description=topic_description,
                 image_data=None,  # Optionally, we could download and encode to base64
             )
 
         except Exception as e:
-            log.error(f"Error generating 3D icon: {e}")
-            raise RuntimeError(f"Failed to generate 3D icon: {e}")
+            log.error(f"Error generating 3D icon and description: {e}")
+            raise RuntimeError(f"Failed to generate 3D icon and description: {e}")
+
+    async def generate_topic_description(
+        self, supabase_client: Client, project_id: str
+    ) -> str:
+        """
+        Generate a concise few-words description about the topic being discussed in the project.
+
+        Analyzes the project name, description, and associated content to create a short
+        topic description (typically 2-5 words).
+
+        Args:
+            supabase_client: The Supabase client instance
+            project_id: The ID of the project to analyze
+
+        Returns:
+            A concise string description of the project topic (few words)
+        """
+        log.info(f"Generating topic description for project: {project_id}")
+
+        try:
+            # Fetch the project details
+            project = await self.get_project_by_id(supabase_client, project_id)
+
+            # Fetch image pairs associated with the project to understand context
+            response = (
+                await supabase_client.table("image_pairs")
+                .select("prompt_text")
+                .eq("project_id", project_id)
+                .limit(5)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            image_pairs = response.data if response.data else []
+
+            # Build context for AI analysis
+            context_parts = []
+            if project.name:
+                context_parts.append(f"Project Name: {project.name}")
+            if project.description:
+                context_parts.append(f"Project Description: {project.description}")
+
+            if image_pairs:
+                context_parts.append("\nRecent prompts:")
+                for idx, pair in enumerate(image_pairs[:3], 1):
+                    if pair.get("prompt_text"):
+                        context_parts.append(f"{idx}. Prompt: {pair['prompt_text']}")
+
+            context = "\n".join(context_parts)
+
+            if not context.strip():
+                log.warning(f"No context available for project {project_id}")
+                return "Untitled Project"
+
+            # Use OpenAI to generate a concise topic description
+            client = OpenAI()
+
+            response = client.chat.completions.create(
+                model="gpt-4.1",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""Based on the following project information, generate a very concise topic description in 2-5 words that captures the essence of what this project is about.
+
+{context}
+
+Respond with ONLY the 3 to 6 words short topic description, nothing else. 
+Your response (3-6 words only):""",
+                    }
+                ],
+            )
+
+            # Extract the topic description from the response
+            topic_description = response.choices[0].message.content.strip()
+
+            # Remove any quotes if present
+            topic_description = topic_description.strip('"').strip("'")
+
+            log.info(
+                f"Generated topic description for project {project_id}: {topic_description}"
+            )
+
+            return topic_description
+
+        except Exception as e:
+            log.error(
+                f"Error generating topic description for project {project_id}: {e}"
+            )
+            # Return a fallback instead of raising an error
+            return "Project Topic"
