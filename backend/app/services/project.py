@@ -246,7 +246,7 @@ class ProjectService:
 
         try:
             # Construct the full prompt with style modifiers
-            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D icon png with the following style: {request.style}"
+            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D icon png with the following style: {request.style}. Also make sure you don't include text in the image."
 
             # Define callback to log queue updates
             def on_queue_update(update):
