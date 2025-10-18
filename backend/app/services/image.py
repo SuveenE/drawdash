@@ -28,6 +28,8 @@ class ImageService:
             ImageGenerationResponse containing the generated image data
         """
         log.info(f"Generating image with prompt: {input.prompt}")
+         
+        prompt = f"Generate an whiteboard drawingimage based on the following prompt and the reference image: {input.prompt}"
         
         # Prepare reference image if provided
         reference_image = None
@@ -43,7 +45,7 @@ class ImageService:
         # Call Gemini API with image generation model
         try:
             # Build the contents list - prompt is required, reference image is optional
-            contents = [input.prompt]
+            contents = [prompt]
             if reference_image:
                 contents.append(reference_image)
             
