@@ -3,8 +3,9 @@
 export interface GenerateImageRequest {
   prompt: string;
   image_data?: string | null;
-  project_id: string;
+  project_id?: string;
   type: 'generate' | 'edit';
+  save_data?: boolean;
 }
 
 export interface GenerateImageResponse {

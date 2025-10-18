@@ -178,22 +178,26 @@ class ImageController:
                 )
                 log.info("Image generation completed successfully")
 
-                # Add background task to generate and save project icon (on first generation)
-                background_tasks.add_task(
-                    generate_and_save_project_icon,
-                    authorization=authorization,
-                    project_id=input.project_id,
-                )
+                # Only add background tasks if save_data is True
+                if input.save_data:
+                    # Add background task to generate and save project icon (on first generation)
+                    background_tasks.add_task(
+                        generate_and_save_project_icon,
+                        authorization=authorization,
+                        project_id=input.project_id,
+                    )
 
-                # Add background task to save images to database
-                background_tasks.add_task(
-                    save_images_to_database,
-                    authorization=authorization,
-                    project_id=input.project_id,
-                    input_image_data=input.image_data,
-                    output_image_data=response.image_data,
-                    prompt_text=input.prompt,
-                )
+                    # Add background task to save images to database
+                    background_tasks.add_task(
+                        save_images_to_database,
+                        authorization=authorization,
+                        project_id=input.project_id,
+                        input_image_data=input.image_data,
+                        output_image_data=response.image_data,
+                        prompt_text=input.prompt,
+                    )
+                else:
+                    log.info("Skipping save operations as save_data is False")
 
                 return response
             except ValueError as e:
