@@ -57,10 +57,10 @@ export function ImageSidebar({
           animation: scale-pulse 2s ease-in-out infinite;
         }
       `}</style>
-      <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white p-6">
+      <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white p-6 pt-4">
         {/* Generated Image Display */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-900">Generated Image</label>
+          <label className="text-sm font-medium text-gray-900">Generated Diagram</label>
           <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-gray-300 bg-gray-50">
             {generatedImage ? (
               <Image
@@ -71,7 +71,7 @@ export function ImageSidebar({
               />
             ) : (
               // <Image src="/test.png" alt="Test preview" fill className="object-contain" />
-              <span className="text-sm text-gray-500">No image generated yet</span>
+              <span className="text-sm text-gray-500">No Diagram generated yet</span>
             )}
           </div>
           {!imageUsed && generatedImage && (
