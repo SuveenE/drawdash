@@ -30,7 +30,7 @@ export function BeforeAfterSlider({
     // Don't start animation until we have the after image
     if (!afterImageUrl) return;
 
-    const animationDuration = 200; // 0.2 seconds
+    const animationDuration = 300; // 0.3 seconds
     const startTime = Date.now();
     const startPosition = 0;
     const endPosition = 100;

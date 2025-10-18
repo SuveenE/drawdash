@@ -14,4 +14,3 @@ Maintain the overall structure and background of the original image while incorp
 Focus on modifying or enhancing specific elements as described by the user.
 
 User edit instructions: {user_prompt}"""
-

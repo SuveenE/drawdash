@@ -34,6 +34,8 @@ export default function Home() {
     width: number;
     height: number;
   } | null>(null);
+  const [projectName, setProjectName] = useState('Untitled');
+  const [isEditingName, setIsEditingName] = useState(false);
   const [projectId] = useState<string>(() => {
     // Generate a UUID for the project session
     return '6e8dec9f-4d2c-4b7e-9053-28e5ebe4aeb9';
@@ -475,10 +477,14 @@ export default function Home() {
     try {
       const canvasImageData = await exportCanvasImage();
 
+      // Determine type: "generate" for agent mode (no canvas content), "edit" for ask mode (has canvas content)
+      const requestType = canvasImageData ? 'edit' : 'generate';
+
       const data = await generateImage({
         prompt: transcript,
         image_data: canvasImageData,
         project_id: projectId,
+        type: requestType,
       });
 
       setGeneratedImage(data.image_data);
@@ -499,8 +505,31 @@ export default function Home() {
     <div className="flex h-full w-full bg-white">
       {/* Left Side - Drawing Canvas */}
       <div className="flex flex-1 flex-col bg-white">
-        <div className="border-b border-gray-200 bg-white p-2 text-center text-sm font-medium text-gray-900">
-          Drawing Canvas
+        <div className="border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
+          <span className="text-gray-500">Projects/</span>
+          {isEditingName ? (
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              onBlur={() => setIsEditingName(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingName(false);
+                }
+              }}
+              autoFocus
+              className="inline-block w-auto min-w-[60px] border-b border-blue-500 bg-transparent px-1 outline-none"
+              style={{ width: `${Math.max(60, projectName.length * 8 + 10)}px` }}
+            />
+          ) : (
+            <span
+              onClick={() => setIsEditingName(true)}
+              className="cursor-pointer rounded px-1 hover:bg-gray-100"
+            >
+              {projectName}
+            </span>
+          )}
         </div>
         <div className="flex-1">
           <Tldraw
