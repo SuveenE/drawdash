@@ -161,7 +161,7 @@ export default function ProjectCanvasPage() {
         } else {
           console.log('[AUTO-GEN] Skipping - no transcript or handler');
         }
-      }, 20000); // 20 seconds
+      }, 25000); // 20 seconds
     } else {
       console.log(
         '[AUTO-GEN] Not setting timer. mode:',
@@ -734,39 +734,49 @@ export default function ProjectCanvasPage() {
 
   // Load canvas state from database when project loads
   useEffect(() => {
-    if (!editorRef.current || !project?.snapshot || !frameId || hasLoadedSnapshotRef.current)
-      return;
+    if (!editorRef.current || !project || hasLoadedSnapshotRef.current) return;
 
     try {
       const editor = editorRef.current;
-      // Load the snapshot into the store as a remote change to avoid triggering auto-save
-      editor.store.mergeRemoteChanges(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        loadSnapshot(editor.store, { document: project.snapshot as any });
-      });
 
-      // After loading snapshot, find the frame and update frameId state
-      // The snapshot may have a different frame ID than the initial one
-      const existingShapes = Array.from(editor.getCurrentPageShapeIds());
-      const existingFrame = existingShapes.find((id) => {
-        const shape = editor.getShape(id);
-        return (
-          shape?.type === 'frame' && (shape.props as { name?: string })?.name === 'Drawing Area'
-        );
-      });
+      // If project has a snapshot, load it
+      if (project.snapshot) {
+        console.log('Loading canvas snapshot from database...');
+        // Load the snapshot into the store as a remote change to avoid triggering auto-save
+        editor.store.mergeRemoteChanges(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          loadSnapshot(editor.store, { document: project.snapshot as any });
+        });
 
-      if (existingFrame && existingFrame !== frameId) {
-        console.log('Updating frameId after snapshot load:', existingFrame);
-        setFrameId(existingFrame as string);
+        // After loading snapshot, find the frame and update frameId state
+        const existingShapes = Array.from(editor.getCurrentPageShapeIds());
+        const existingFrame = existingShapes.find((id) => {
+          const shape = editor.getShape(id);
+          return (
+            shape?.type === 'frame' && (shape.props as { name?: string })?.name === 'Drawing Area'
+          );
+        });
+
+        if (existingFrame) {
+          console.log('Found frame in snapshot:', existingFrame);
+          setFrameId(existingFrame as string);
+          // Zoom to fit the loaded frame
+          editor.zoomToFit();
+        }
+
+        console.log('Canvas loaded from database');
+      } else {
+        console.log('No snapshot found, using initial frame');
       }
 
+      // Mark as loaded regardless of whether we had a snapshot or not
+      // This enables auto-save for both new and existing projects
       hasLoadedSnapshotRef.current = true;
-      console.log('Canvas loaded from database');
     } catch (err) {
       console.error('Error loading canvas:', err);
       setError(err instanceof Error ? err.message : 'Failed to load canvas');
     }
-  }, [project?.snapshot, frameId]);
+  }, [project]);
 
   // Auto-save with debounce - listen for canvas changes
   useEffect(() => {
@@ -850,12 +860,21 @@ export default function ProjectCanvasPage() {
               });
 
               if (existingFrame) {
+                console.log('Found existing frame:', existingFrame);
                 setFrameId(existingFrame);
                 editor.zoomToFit();
                 return;
               }
 
-              // Create a centered frame for drawing
+              // If project has a snapshot, wait for it to load (don't create a frame)
+              // The snapshot loading effect will handle setting the frameId
+              if (project?.snapshot) {
+                console.log('Project has snapshot, waiting for load...');
+                return;
+              }
+
+              // Create a centered frame for drawing (only for new projects)
+              console.log('Creating new frame for new project');
               const { width, height } = editor.getViewportPageBounds();
               const frameWidth = Math.min(800, width * 0.6);
               const frameHeight = Math.min(600, height * 0.6);
