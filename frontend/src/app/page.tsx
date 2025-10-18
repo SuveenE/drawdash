@@ -168,10 +168,12 @@ export default function Home() {
   };
 
   return (
-    <div className="fixed inset-0 flex">
+    <div className="fixed inset-0 flex bg-white">
       {/* Left Side - Drawing Canvas */}
-      <div className="flex flex-1 flex-col">
-        <div className="border-b p-2 text-center text-sm font-medium">Drawing Canvas</div>
+      <div className="flex flex-1 flex-col bg-white">
+        <div className="border-b border-gray-200 bg-white p-2 text-center text-sm font-medium text-gray-900">
+          Drawing Canvas
+        </div>
         <div className="flex-1">
           <Tldraw
             onMount={(editor) => {
@@ -225,11 +227,11 @@ export default function Home() {
       </div>
 
       {/* Right Sidebar - Generated Image & Controls */}
-      <div className="bg-background flex w-96 flex-col gap-6 border-l p-6">
+      <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white p-6">
         {/* Generated Image Display */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Generated Image</label>
-          <div className="bg-muted/30 relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed">
+          <label className="text-sm font-medium text-gray-900">Generated Image</label>
+          <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-gray-300 bg-gray-50">
             {generatedImage ? (
               <Image
                 src={`data:image/png;base64,${generatedImage}`}
@@ -238,29 +240,29 @@ export default function Home() {
                 className="object-contain"
               />
             ) : (
-              <span className="text-muted-foreground text-sm">No image generated yet</span>
+              <span className="text-sm text-gray-500">No image generated yet</span>
             )}
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t" />
+        <div className="border-t border-gray-200" />
 
         {/* Text Input */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Prompt (Text)</label>
+          <label className="text-sm font-medium text-gray-900">Prompt (Text)</label>
           <Input
             type="text"
             placeholder="Type your prompt here or use voice input below..."
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            className="w-full"
+            className="w-full bg-white"
           />
         </div>
 
         {/* Microphone Control */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Voice Input</label>
+          <label className="text-sm font-medium text-gray-900">Voice Input</label>
           <Button
             onClick={toggleListening}
             variant={isListening ? 'destructive' : 'default'}
@@ -282,7 +284,7 @@ export default function Home() {
 
         {/* Error Display */}
         {error && (
-          <div className="rounded-md border border-red-500 bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">
+          <div className="rounded-md border border-red-500 bg-red-50 p-3 text-sm text-red-900">
             {error}
           </div>
         )}
