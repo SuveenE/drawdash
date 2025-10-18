@@ -4,8 +4,7 @@ from uuid import uuid4
 
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (Project, ProjectCreateRequest,
-                                ProjectUpdateRequest)
+from app.models.project import Project, ProjectCreateRequest, ProjectUpdateRequest
 
 log = logging.getLogger(__name__)
 
