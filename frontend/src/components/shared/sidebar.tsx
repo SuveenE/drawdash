@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -66,7 +67,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           : 'flex h-10 w-10 items-center justify-center rounded-md md:h-8 md:w-8'
       } ${
         isSelected
-          ? 'border border-blue-600/30 bg-blue-600/10 text-blue-600'
+          ? 'border border-rose-700/30 bg-rose-700/10 text-rose-700'
           : isHovered
             ? 'bg-gray-100 text-gray-700'
             : 'text-gray-600 hover:text-gray-700'
@@ -163,7 +164,13 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
             <div className="flex items-center justify-between px-4 py-6 md:py-8">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
-                  <div className="h-6 w-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600" />
+                  <Image
+                    src="/logo.png"
+                    alt="WhisprDraw Logo"
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 object-contain"
+                  />
                   <span className="text-xl font-bold text-gray-900">WhisprDraw</span>
                 </div>
               </div>
@@ -216,7 +223,13 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
           <div className="flex h-full flex-col">
             {/* Collapsed header */}
             <div className="flex flex-col items-center pt-8 pb-6">
-              <div className="h-6 w-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600" />
+              <Image
+                src="/logo.png"
+                alt="WhisprDraw Logo"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
             </div>
 
             {/* Navigation icons */}
@@ -268,7 +281,13 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
               <Menu size={20} />
             </button>
             <div className="flex items-center space-x-2">
-              <div className="h-5 w-5 rounded-md bg-gradient-to-br from-blue-500 to-purple-600" />
+              <Image
+                src="/logo.png"
+                alt="WhisprDraw Logo"
+                width={24}
+                height={24}
+                className="h-6 w-6 object-contain"
+              />
               <span className="text-lg font-bold text-gray-900">WhisprDraw</span>
             </div>
           </div>
