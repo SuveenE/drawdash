@@ -23,7 +23,7 @@ async def save_images_to_database(
     try:
         log.info(f"Starting background task to save images for project {project_id}")
 
-        # Skip if no input image data (can't save without input)
+        # Skip if no input image data (required for image pairs)
         if not input_image_data:
             log.warning("No input image data provided, skipping database save")
             return
@@ -93,6 +93,11 @@ class ImageController:
             authorization: str = Header(None),
         ) -> ImageGenerationResponse:
             log.info(f"Generating image with prompt: {input.prompt}")
+            log.info(f"Request type: {input.type}")
+            log.info(f"Input image data present: {bool(input.image_data)}")
+            if input.image_data:
+                log.info(f"Input image data length: {len(input.image_data)}")
+            
             try:
                 response: ImageGenerationResponse = await self.service.generate_image(
                     input=input

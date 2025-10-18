@@ -510,12 +510,32 @@ export default function ProjectCanvasPage() {
   }, [imageUsed, generatedImage, showSlider, handleAcceptImage, handleRejectImage]);
 
   const exportCanvasImage = useCallback(async (): Promise<string | null> => {
-    if (!editorRef.current || !frameId) return null;
+    console.log('exportCanvasImage: Starting export...');
+    console.log('exportCanvasImage: editorRef.current:', !!editorRef.current);
+    console.log('exportCanvasImage: frameId:', frameId);
+
+    if (!editorRef.current || !frameId) {
+      console.log('exportCanvasImage: No editor or frameId, returning null');
+      return null;
+    }
 
     const editor = editorRef.current;
-    const frame = editor.getShape(frameId);
 
-    if (!frame) return null;
+    // Debug: Check all shapes on the current page
+    const allShapeIds = Array.from(editor.getCurrentPageShapeIds());
+    console.log('exportCanvasImage: All shape IDs on page:', allShapeIds);
+    console.log('exportCanvasImage: Looking for frameId:', frameId);
+
+    const frame = editor.getShape(frameId);
+    console.log('exportCanvasImage: frame object:', frame);
+
+    if (!frame) {
+      console.log('exportCanvasImage: No frame found, returning null');
+      console.log('exportCanvasImage: This might be a timing issue or frameId mismatch');
+      return null;
+    }
+
+    console.log('exportCanvasImage: Frame found successfully, type:', frame.type);
 
     // Get all shapes that are children of the frame
     const childShapeIds = editor.getSortedChildIdsForParent(frameId).filter((id: string) => {
@@ -523,17 +543,22 @@ export default function ProjectCanvasPage() {
       return shape && !shape.isLocked;
     });
 
+    console.log('exportCanvasImage: childShapeIds count:', childShapeIds.length);
+
     // Include the frame itself and all its children for export
     const shapeIdsToExport = [frameId, ...childShapeIds];
 
-    if (shapeIdsToExport.length === 0) return null;
+    console.log('exportCanvasImage: shapeIdsToExport count:', shapeIdsToExport.length);
 
     // Export only the frame and its contents to PNG
+    // Note: shapeIdsToExport will always have at least the frame itself
     const { blob } = await editor.toImage(shapeIdsToExport, {
       format: 'png',
       background: true,
       padding: 0,
     });
+
+    console.log('exportCanvasImage: Blob created, size:', blob.size);
 
     // Convert blob to base64
     return new Promise((resolve, reject) => {
@@ -541,9 +566,14 @@ export default function ProjectCanvasPage() {
       reader.onloadend = () => {
         const base64data = reader.result as string;
         // Remove the data:image/png;base64, prefix
-        resolve(base64data.split(',')[1]);
+        const base64 = base64data.split(',')[1];
+        console.log('exportCanvasImage: Base64 created, length:', base64?.length || 0);
+        resolve(base64);
       };
-      reader.onerror = reject;
+      reader.onerror = (error) => {
+        console.error('exportCanvasImage: FileReader error:', error);
+        reject(error);
+      };
       reader.readAsDataURL(blob);
     });
   }, [frameId]);
@@ -560,10 +590,17 @@ export default function ProjectCanvasPage() {
     setError(null);
 
     try {
+      // Always export canvas image - needed for both generate and edit modes
+      console.log('Exporting canvas image...');
       const canvasImageData = await exportCanvasImage();
+      console.log(
+        'Canvas image data:',
+        canvasImageData ? `${canvasImageData.length} chars` : 'null',
+      );
 
-      // Determine type: "generate" for agent mode (no canvas content), "edit" for ask mode (has canvas content)
-      const requestType = canvasImageData ? 'edit' : 'generate';
+      // Determine type: "generate" for agent mode (empty canvas), "edit" for ask mode (has content)
+      const requestType = isAgentMode() ? 'generate' : 'edit';
+      console.log('Request type:', requestType);
 
       const data = await generateImage({
         prompt: activeTranscript,
@@ -690,6 +727,22 @@ export default function ProjectCanvasPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         loadSnapshot(editor.store, { document: project.snapshot as any });
       });
+
+      // After loading snapshot, find the frame and update frameId state
+      // The snapshot may have a different frame ID than the initial one
+      const existingShapes = Array.from(editor.getCurrentPageShapeIds());
+      const existingFrame = existingShapes.find((id) => {
+        const shape = editor.getShape(id);
+        return (
+          shape?.type === 'frame' && (shape.props as { name?: string })?.name === 'Drawing Area'
+        );
+      });
+
+      if (existingFrame && existingFrame !== frameId) {
+        console.log('Updating frameId after snapshot load:', existingFrame);
+        setFrameId(existingFrame as string);
+      }
+
       hasLoadedSnapshotRef.current = true;
       console.log('Canvas loaded from database');
     } catch (err) {

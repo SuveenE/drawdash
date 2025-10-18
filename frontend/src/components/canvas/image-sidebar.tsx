@@ -94,6 +94,18 @@ export function ImageSidebar({
         .wave-bar:nth-child(3) {
           animation-delay: 0.2s;
         }
+        @keyframes blink {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.4;
+          }
+        }
+        .animate-blink {
+          animation: blink 1.5s ease-in-out infinite;
+        }
       `}</style>
       <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white p-6 pt-4">
         {/* Generated Image Display */}
@@ -184,20 +196,20 @@ export function ImageSidebar({
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-sm font-medium text-gray-900">
                 <span>Live Transcript</span>
-                {isListening && (
-                  <div className="flex items-center gap-1 text-blue-600">
+                {isListening && !isGenerating && (
+                  <div className="animate-blink flex items-center gap-1 text-blue-600">
                     <Binoculars className="h-3.5 w-3.5" />
                     <span className="text-xs">observing</span>
                   </div>
                 )}
                 {isGenerating && isThinking && (
-                  <div className="flex items-center gap-1 text-blue-600">
+                  <div className="animate-blink flex items-center gap-1 text-blue-600">
                     <Brain className="h-3.5 w-3.5" />
                     <span className="text-xs">thinking</span>
                   </div>
                 )}
                 {isGenerating && !isThinking && (
-                  <div className="flex items-center gap-1 text-blue-600">
+                  <div className="animate-blink flex items-center gap-1 text-blue-600">
                     <Paintbrush className="h-3.5 w-3.5" />
                     <span className="text-xs">sketching</span>
                   </div>

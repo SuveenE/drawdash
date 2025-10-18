@@ -42,7 +42,7 @@ async def upload_image_to_storage(
         filename = f"{folder}/{uuid.uuid4()}.{file_extension}"
 
         # Upload to Supabase storage
-        response = await supabase_client.storage.from_(bucket_name).upload(
+        await supabase_client.storage.from_(bucket_name).upload(
             path=filename,
             file=image_bytes,
             file_options={"content-type": mime_type},
