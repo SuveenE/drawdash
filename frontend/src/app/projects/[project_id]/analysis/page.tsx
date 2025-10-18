@@ -30,13 +30,41 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="flex h-full flex-col p-8">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Link
+          href={`/projects/${projectId}`}
+          className="inline-flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="h-4 w-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+            />
+          </svg>
+          Back to Project
+        </Link>
+      </div>
+
       {/* Breadcrumb */}
       <nav className="mb-4 text-sm">
         <Link href="/projects" className="text-blue-600 hover:underline">
           Projects
         </Link>
         <span className="mx-2 text-gray-400">/</span>
-        <span className="text-gray-600">{project?.name || projectId}</span>
+        <Link href={`/projects/${projectId}`} className="text-blue-600 hover:underline">
+          {project?.name || projectId}
+        </Link>
+        <span className="mx-2 text-gray-400">/</span>
+        <span className="text-gray-600">Analysis</span>
       </nav>
 
       {/* Project Header */}
