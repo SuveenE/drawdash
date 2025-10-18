@@ -109,7 +109,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   const pathname = usePathname();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<SidebarTab | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
