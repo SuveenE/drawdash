@@ -3,24 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 
 import React, { useState } from 'react';
 
-import { DEFAULT_USER_ID, createProject } from '@/actions/projects';
 import { FolderOpen, Menu, Plus, Settings, Sidebar, X } from 'lucide-react';
-import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { CreateProjectDialog } from '@/components/projects/create-project-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 enum SidebarTab {
@@ -120,13 +108,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   const pathname = usePathname();
-  const router = useRouter();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<SidebarTab | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [projectName, setProjectName] = useState('');
 
   // Determine the current tab based on the pathname
   const getCurrentTab = (): SidebarTab | null => {
@@ -155,38 +140,11 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   };
 
   const handleOpenDialog = () => {
-    setProjectName('');
     setIsDialogOpen(true);
   };
 
-  const handleCreateProject = async () => {
-    if (isCreatingProject || !projectName.trim()) return;
-
-    setIsCreatingProject(true);
-    try {
-      const newProject = await createProject({
-        user_id: DEFAULT_USER_ID,
-        name: projectName.trim(),
-        description: '',
-      });
-
-      toast.success('Project created successfully!');
-      setIsDialogOpen(false);
-      setProjectName('');
-      router.push(`/projects/${newProject.id}`);
-      setIsMobileMenuOpen(false);
-    } catch (error) {
-      console.error('Failed to create project:', error);
-      toast.error('Failed to create project. Please try again.');
-    } finally {
-      setIsCreatingProject(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && projectName.trim()) {
-      handleCreateProject();
-    }
+  const handleProjectCreated = () => {
+    setIsMobileMenuOpen(false);
   };
 
   const selectedTab = getCurrentTab();
@@ -370,44 +328,11 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
       </main>
 
       {/* Create Project Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
-            <DialogDescription>Give your project a name to get started.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Input
-              id="name"
-              placeholder="Enter project name..."
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              autoFocus
-              className="text-black"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isCreatingProject}
-              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:text-gray-900"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateProject}
-              disabled={isCreatingProject || !projectName.trim()}
-              className="bg-gray-900 text-white hover:bg-gray-800"
-            >
-              {isCreatingProject ? 'Creating...' : 'Create Project'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateProjectDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
     </div>
   );
 };
