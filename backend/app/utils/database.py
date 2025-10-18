@@ -3,7 +3,6 @@ import os
 import uuid
 
 from supabase import AsyncClientOptions
-
 # from supabase import AsyncClientOptions
 from supabase._async.client import AsyncClient as Client
 from supabase._async.client import create_client
@@ -25,7 +24,9 @@ def _get_required_env_var(var_name: str) -> str:
     """Get a required environment variable with proper error handling."""
     value = os.environ.get(var_name)
     if not value:
-        raise ValueError(f"Required environment variable '{var_name}' is not set or is empty")
+        raise ValueError(
+            f"Required environment variable '{var_name}' is not set or is empty"
+        )
     return value
 
 

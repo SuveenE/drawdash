@@ -49,9 +49,9 @@ async def upload_image_to_storage(
         )
 
         # Get public URL
-        public_url_response = await supabase_client.storage.from_(bucket_name).get_public_url(
-            filename
-        )
+        public_url_response = await supabase_client.storage.from_(
+            bucket_name
+        ).get_public_url(filename)
 
         log.info(f"Successfully uploaded image to {public_url_response}")
         return public_url_response, mime_type, width, height
@@ -115,4 +115,3 @@ async def save_image_pair_to_db(
     except Exception as e:
         log.error(f"Error saving image pair to database: {e}")
         raise RuntimeError(f"Failed to save image pair: {e}")
-
