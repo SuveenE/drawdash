@@ -77,6 +77,30 @@ export default function Home() {
     };
   }, []);
 
+  // Load test image on mount for testing
+  useEffect(() => {
+    const loadTestImage = async () => {
+      try {
+        const response = await fetch('/test.png');
+        const blob = await response.blob();
+
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          // Remove the data:image/png;base64, prefix
+          const base64Image = base64data.split(',')[1];
+          setGeneratedImage(base64Image);
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.error('Error loading test image:', err);
+      }
+    };
+
+    loadTestImage();
+  }, []);
+
   const toggleListening = () => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser');
@@ -90,6 +114,102 @@ export default function Home() {
       setTranscript('');
       recognitionRef.current.start();
       setIsListening(true);
+    }
+  };
+
+  const handleUseImage = async () => {
+    if (!editorRef.current || !frameId) {
+      setError('Canvas not ready');
+      return;
+    }
+
+    try {
+      const editor = editorRef.current;
+      const frame = editor.getShape(frameId);
+
+      if (!frame) {
+        setError('Frame not found');
+        return;
+      }
+
+      // For testing, use test.png from public folder
+      const response = await fetch('/test.png');
+      const blob = await response.blob();
+
+      // Convert blob to data URL
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      // Get image dimensions
+      const img = document.createElement('img');
+      const imageLoadPromise = new Promise<{ width: number; height: number }>((resolve, reject) => {
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.onerror = reject;
+      });
+      img.src = dataUrl;
+      const { width: imageWidth, height: imageHeight } = await imageLoadPromise;
+
+      // Create asset ID with the required "asset:" prefix
+      const assetId = `asset:${createShapeId()}` as any;
+
+      // Create the asset
+      editor.createAssets([
+        {
+          id: assetId,
+          type: 'image',
+          typeName: 'asset',
+          props: {
+            name: 'test.png',
+            src: dataUrl,
+            w: imageWidth,
+            h: imageHeight,
+            mimeType: 'image/png',
+            isAnimated: false,
+          },
+          meta: {},
+        },
+      ]);
+
+      // Get frame dimensions
+      const frameProps = frame.props as { w: number; h: number };
+
+      // Calculate scaled dimensions to fit in frame
+      const maxWidth = frameProps.w * 0.8;
+      const maxHeight = frameProps.h * 0.8;
+      const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight, 1);
+      const scaledWidth = imageWidth * scale;
+      const scaledHeight = imageHeight * scale;
+
+      // Calculate position to center the image within the frame
+      // Since we're using parentId, coordinates are relative to the frame's origin (0,0)
+      const imageX = (frameProps.w - scaledWidth) / 2;
+      const imageY = (frameProps.h - scaledHeight) / 2;
+
+      // Create the image shape
+      const imageShapeId = createShapeId();
+      editor.createShapes([
+        {
+          id: imageShapeId,
+          type: 'image',
+          x: imageX,
+          y: imageY,
+          parentId: frameId,
+          props: {
+            w: scaledWidth,
+            h: scaledHeight,
+            assetId: assetId,
+          },
+        },
+      ]);
+
+      console.log('Image placed in frame');
+    } catch (err) {
+      console.error('Error placing image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to place image');
     }
   };
 
@@ -255,6 +375,14 @@ export default function Home() {
               <span className="text-sm text-gray-500">No image generated yet</span>
             )}
           </div>
+          <Button
+            onClick={handleUseImage}
+            variant="outline"
+            className="w-full"
+            disabled={!frameId || !editorRef.current}
+          >
+            Use Image
+          </Button>
         </div>
 
         {/* Divider */}
