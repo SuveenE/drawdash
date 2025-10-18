@@ -3,6 +3,7 @@ from typing import Dict, List
 from uuid import uuid4
 
 import fal_client
+from openai import OpenAI
 from supabase._async.client import AsyncClient as Client
 
 from app.models.project import (
@@ -282,3 +283,94 @@ class ProjectService:
         except Exception as e:
             log.error(f"Error generating 3D icon: {e}")
             raise RuntimeError(f"Failed to generate 3D icon: {e}")
+
+    async def generate_topic_description(
+        self, supabase_client: Client, project_id: str
+    ) -> str:
+        """
+        Generate a concise few-words description about the topic being discussed in the project.
+        
+        Analyzes the project name, description, and associated content to create a short
+        topic description (typically 2-5 words).
+
+        Args:
+            supabase_client: The Supabase client instance
+            project_id: The ID of the project to analyze
+
+        Returns:
+            A concise string description of the project topic (few words)
+        """
+        log.info(f"Generating topic description for project: {project_id}")
+
+        try:
+            # Fetch the project details
+            project = await self.get_project_by_id(supabase_client, project_id)
+
+            # Fetch image pairs associated with the project to understand context
+            response = (
+                await supabase_client.table("image_pairs")
+                .select("prompt, before_description, after_description")
+                .eq("project_id", project_id)
+                .limit(5)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            image_pairs = response.data if response.data else []
+
+            # Build context for AI analysis
+            context_parts = []
+            if project.name:
+                context_parts.append(f"Project Name: {project.name}")
+            if project.description:
+                context_parts.append(f"Project Description: {project.description}")
+            
+            if image_pairs:
+                context_parts.append("\nRecent prompts and descriptions:")
+                for idx, pair in enumerate(image_pairs[:3], 1):
+                    if pair.get("prompt"):
+                        context_parts.append(f"{idx}. Prompt: {pair['prompt']}")
+                    if pair.get("before_description"):
+                        context_parts.append(f"   Before: {pair['before_description']}")
+                    if pair.get("after_description"):
+                        context_parts.append(f"   After: {pair['after_description']}")
+
+            context = "\n".join(context_parts)
+
+            if not context.strip():
+                log.warning(f"No context available for project {project_id}")
+                return "Untitled Project"
+
+            # Use OpenAI to generate a concise topic description
+            client = OpenAI()
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                max_tokens=50,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""Based on the following project information, generate a very concise topic description in 2-5 words that captures the essence of what this project is about.
+
+{context}
+
+Respond with ONLY the 3 to 6 words short topic description, nothing else. 
+Your response (3-6 words only):"""
+                    }
+                ],
+            )
+
+            # Extract the topic description from the response
+            topic_description = response.choices[0].message.content.strip()
+            
+            # Remove any quotes if present
+            topic_description = topic_description.strip('"').strip("'")
+            
+            log.info(f"Generated topic description for project {project_id}: {topic_description}")
+            
+            return topic_description
+
+        except Exception as e:
+            log.error(f"Error generating topic description for project {project_id}: {e}")
+            # Return a fallback instead of raising an error
+            return "Project Topic"
