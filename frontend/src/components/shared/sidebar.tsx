@@ -3,15 +3,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import React, { useState } from 'react';
 
+import { DEFAULT_USER_ID, createProject } from '@/actions/projects';
 import { FolderOpen, Menu, PenTool, Settings, Sidebar, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 enum SidebarTab {
-  CREATE = 'Create',
   PROJECTS = 'Projects',
   SETTINGS = 'Settings',
 }
@@ -23,7 +25,6 @@ interface SidebarTabInfo {
 }
 
 const sidebarTabs: SidebarTabInfo[] = [
-  { value: SidebarTab.CREATE, icon: <PenTool size={16} />, path: '/' },
   {
     value: SidebarTab.PROJECTS,
     icon: <FolderOpen size={16} />,
@@ -109,20 +110,20 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<SidebarTab | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   // Determine the current tab based on the pathname
-  const getCurrentTab = (): SidebarTab => {
-    if (pathname === '/') {
-      return SidebarTab.CREATE;
-    } else if (pathname === '/projects' || pathname?.startsWith('/projects/')) {
+  const getCurrentTab = (): SidebarTab | null => {
+    if (pathname === '/projects' || pathname?.startsWith('/projects/')) {
       return SidebarTab.PROJECTS;
     } else if (pathname === '/settings' || pathname?.startsWith('/settings/')) {
       return SidebarTab.SETTINGS;
     }
-    return SidebarTab.CREATE; // Default fallback
+    return null; // No tab selected for other routes
   };
 
   const handleSidebarToggle = () => {
@@ -133,12 +134,34 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleTabHover = (tab: SidebarTab, isHovering: boolean) => {
+  const handleTabHover = (tab: SidebarTab | null, isHovering: boolean) => {
     setHoveredTab(isHovering ? tab : null);
   };
 
   const handleMobileTabClick = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleCreateProject = async () => {
+    if (isCreatingProject) return;
+
+    setIsCreatingProject(true);
+    try {
+      const newProject = await createProject({
+        user_id: DEFAULT_USER_ID,
+        name: `New Project ${new Date().toLocaleDateString()}`,
+        description: '',
+      });
+
+      toast.success('Project created successfully!');
+      router.push(`/projects/${newProject.id}`);
+      setIsMobileMenuOpen(false);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      toast.error('Failed to create project. Please try again.');
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   const selectedTab = getCurrentTab();
@@ -185,6 +208,20 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
 
             {/* Navigation Items */}
             <div className="flex-1 space-y-1 px-2">
+              {/* Create New Project Button */}
+              <button
+                onClick={handleCreateProject}
+                disabled={isCreatingProject}
+                className="flex w-full items-center rounded-md px-3 py-3 text-gray-600 transition-all duration-200 hover:bg-rose-700/10 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 md:py-2"
+              >
+                <div className="flex w-full items-center space-x-3 md:space-x-2">
+                  <PenTool size={16} className="flex-shrink-0" />
+                  <span className="text-base font-medium md:text-sm">
+                    {isCreatingProject ? 'Creating...' : 'Create'}
+                  </span>
+                </div>
+              </button>
+
               {sidebarTabs.map((tab) => (
                 <SidebarItem
                   key={tab.value}
@@ -234,6 +271,22 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
 
             {/* Navigation icons */}
             <div className="flex flex-1 flex-col items-center space-y-2 px-4">
+              {/* Create New Project Button (Collapsed) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={isCreatingProject}
+                    className="flex h-10 w-10 items-center justify-center rounded-md text-gray-600 transition-all duration-200 hover:bg-rose-700/10 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50 md:h-8 md:w-8"
+                  >
+                    <PenTool size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {isCreatingProject ? 'Creating...' : 'Create'}
+                </TooltipContent>
+              </Tooltip>
+
               {sidebarTabs.map((tab) => (
                 <SidebarItem
                   key={tab.value}
