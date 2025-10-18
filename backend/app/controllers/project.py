@@ -149,19 +149,30 @@ class ProjectController:
         )
         async def generate_3d_icon(
             request: IconGenerationRequest,
+            authorization: str = Header(None),
         ) -> IconGenerationResponse:
             """
-            Generate a 3D icon using Fal AI based on a text prompt.
+            Generate a 3D icon using Fal AI based on a text prompt and save it with a topic description.
 
-            This endpoint uses Fal AI's FLUX model to generate high-quality 3D-style icons.
-            The icon will be generated with an isometric, clean 3D render style.
+            This endpoint uses Fal AI's FLUX model to generate high-quality 3D-style icons
+            and OpenAI to generate a concise topic description. Both are saved to the project.
             """
-            log.info(f"Generating 3D icon with prompt: {request.prompt}")
+            log.info(f"Generating 3D icon and description for project: {request.project_id}")
             try:
-                # Generate the icon using the service
-                icon_response = await self.service.generate_3d_icon(request=request)
+                # Extract token from authorization header
+                token = authorization.replace("Bearer ", "") if authorization else ""
 
-                log.info(f"Successfully generated 3D icon: {icon_response.image_url}")
+                # Get database client
+                supabase_client = await db_client(token=token)
+
+                # Generate the icon and description using the service
+                icon_response = await self.service.generate_3d_icon(
+                    supabase_client=supabase_client, request=request
+                )
+
+                log.info(
+                    f"Successfully generated 3D icon and description for project: {request.project_id}"
+                )
                 return icon_response
 
             except RuntimeError as e:

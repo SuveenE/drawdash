@@ -232,18 +232,19 @@ class ProjectService:
             raise RuntimeError(f"Failed to update project: {e}")
 
     async def generate_3d_icon(
-        self, request: IconGenerationRequest
+        self, supabase_client: Client, request: IconGenerationRequest
     ) -> IconGenerationResponse:
         """
-        Generate a 3D icon using Fal AI.
+        Generate a 3D icon using Fal AI and a topic description, then save both to the database.
 
         Args:
-            request: The icon generation request containing prompt and style
+            supabase_client: The Supabase client instance
+            request: The icon generation request containing prompt, project_id, user_id, and style
 
         Returns:
-            IconGenerationResponse containing the generated icon URL and data
+            IconGenerationResponse containing the generated icon URL, description, and optional image data
         """
-        log.info(f"Generating 3D icon with prompt: {request.prompt}")
+        log.info(f"Generating 3D icon and description for project: {request.project_id}")
 
         try:
             # Construct the full prompt with style modifiers
@@ -275,14 +276,45 @@ class ProjectService:
             image_url = result["images"][0]["url"]
             log.info(f"Successfully generated 3D icon: {image_url}")
 
+            # Generate topic description
+            log.info(f"Generating topic description for project: {request.project_id}")
+            topic_description = await self.generate_topic_description(
+                supabase_client=supabase_client, project_id=request.project_id
+            )
+            log.info(f"Successfully generated topic description: {topic_description}")
+
+            # Update the project with both icon URL and description
+            log.info(f"Updating project {request.project_id} with icon and description")
+            update_data = {
+                "icon_url": image_url,
+                "description": topic_description,
+            }
+
+            response = (
+                await supabase_client.table("projects")
+                .update(update_data)
+                .eq("id", request.project_id)
+                .eq("user_id", request.user_id)
+                .execute()
+            )
+
+            if not response.data or len(response.data) == 0:
+                log.error(f"Failed to update project {request.project_id}")
+                raise RuntimeError(
+                    "Failed to update project: Project not found or unauthorized"
+                )
+
+            log.info(f"Successfully updated project {request.project_id} with icon and description")
+
             return IconGenerationResponse(
                 image_url=image_url,
+                description=topic_description,
                 image_data=None,  # Optionally, we could download and encode to base64
             )
 
         except Exception as e:
-            log.error(f"Error generating 3D icon: {e}")
-            raise RuntimeError(f"Failed to generate 3D icon: {e}")
+            log.error(f"Error generating 3D icon and description: {e}")
+            raise RuntimeError(f"Failed to generate 3D icon and description: {e}")
 
     async def generate_topic_description(
         self, supabase_client: Client, project_id: str
