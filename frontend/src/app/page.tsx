@@ -78,31 +78,6 @@ export default function Home() {
     };
   }, []);
 
-  // Load test image on mount for testing
-  useEffect(() => {
-    const loadTestImage = async () => {
-      try {
-        const response = await fetch('/test.png');
-        const blob = await response.blob();
-
-        // Convert blob to base64
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
-          // Remove the data:image/png;base64, prefix
-          const base64Image = base64data.split(',')[1];
-          setGeneratedImage(base64Image);
-          setImageUsed(false); // Show button when test image loads
-        };
-        reader.readAsDataURL(blob);
-      } catch (err) {
-        console.error('Error loading test image:', err);
-      }
-    };
-
-    loadTestImage();
-  }, []);
-
   const toggleListening = () => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser');
@@ -120,8 +95,8 @@ export default function Home() {
   };
 
   const handleAcceptImage = useCallback(async () => {
-    if (!editorRef.current || !frameId) {
-      setError('Canvas not ready');
+    if (!editorRef.current || !frameId || !generatedImage) {
+      setError('Canvas not ready or no image available');
       return;
     }
 
@@ -134,17 +109,8 @@ export default function Home() {
         return;
       }
 
-      // For testing, use test.png from public folder
-      const response = await fetch('/test.png');
-      const blob = await response.blob();
-
-      // Convert blob to data URL
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      // Convert base64 to data URL
+      const dataUrl = `data:image/png;base64,${generatedImage}`;
 
       // Get image dimensions
       const img = document.createElement('img');
@@ -215,7 +181,7 @@ export default function Home() {
       console.error('Error placing image:', err);
       setError(err instanceof Error ? err.message : 'Failed to place image');
     }
-  }, [frameId]);
+  }, [frameId, generatedImage]);
 
   const handleRejectImage = useCallback(() => {
     setImageUsed(true);
@@ -404,7 +370,7 @@ export default function Home() {
               <span className="text-sm text-gray-500">No image generated yet</span>
             )}
           </div>
-          {!imageUsed && (
+          {!imageUsed && generatedImage && (
             <div className="flex gap-3">
               <Button
                 onClick={handleAcceptImage}
@@ -437,7 +403,7 @@ export default function Home() {
             placeholder="Type your prompt here or use voice input below..."
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            className="w-full bg-white"
+            className="w-full bg-white text-black"
           />
         </div>
 
