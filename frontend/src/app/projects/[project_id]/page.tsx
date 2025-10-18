@@ -888,6 +888,7 @@ export default function ProjectCanvasPage() {
 
       {/* Right Sidebar - Generated Image & Controls */}
       <ImageSidebar
+        projectId={projectId}
         generatedImage={generatedImage}
         imageUsed={imageUsed}
         transcript={mode === 'agent' ? agentTranscript : askPrompt}
