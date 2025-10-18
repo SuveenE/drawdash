@@ -244,7 +244,7 @@ class ProjectService:
 
         try:
             # Construct the full prompt with style modifiers
-            full_prompt = f"{request.prompt}, {request.style}"
+            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D icon png with the following style: {request.style}"
 
             # Define callback to log queue updates
             def on_queue_update(update):
@@ -255,13 +255,9 @@ class ProjectService:
             # Call Fal AI to generate the icon using the queue system
             # Using FLUX Pro for high-quality 3D icon generation
             result = fal_client.subscribe(
-                "fal-ai/flux-pro/v1.1",
+                "fal-ai/nano-banana",
                 arguments={
                     "prompt": full_prompt,
-                    "image_size": "square",
-                    "num_inference_steps": 28,
-                    "guidance_scale": 3.5,
-                    "num_images": 1,
                 },
                 with_logs=True,
                 on_queue_update=on_queue_update,

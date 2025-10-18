@@ -21,7 +21,7 @@ async def generate_and_save_project_icon(
     project_id: str,
 ):
     """
-    Background task to generate and save a 3D icon for the project on first image generation.
+    Background task to generate and save a 3D icon for the project if it doesn't have one.
     """
     try:
         log.info(f"Starting background task to generate icon for project {project_id}")
@@ -34,16 +34,6 @@ async def generate_and_save_project_icon(
 
         # Initialize project service
         project_service = ProjectService()
-
-        # Check if this is the first image generation
-        is_first = await project_service.check_if_first_image_generation(
-            supabase_client=supabase_client,
-            project_id=project_id,
-        )
-
-        if not is_first:
-            log.info(f"Not the first image generation for project {project_id}, skipping icon generation")
-            return
 
         # Get project details
         project = await project_service.get_project_by_id(
@@ -63,7 +53,7 @@ async def generate_and_save_project_icon(
         # Generate the 3D icon
         icon_request = IconGenerationRequest(
             prompt=icon_prompt,
-            style="3D render, isometric, clean background, modern, professional"
+            style="3D render, isometric, clean background, modern, professional graphic"
         )
         icon_response = await project_service.generate_3d_icon(icon_request)
 
