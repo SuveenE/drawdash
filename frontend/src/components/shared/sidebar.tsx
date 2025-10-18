@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
 import { DEFAULT_USER_ID, createProject } from '@/actions/projects';
-import { FolderOpen, Menu, PenTool, Settings, Sidebar, X } from 'lucide-react';
+import { FolderOpen, Menu, Plus, Settings, Sidebar, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -236,11 +236,11 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
               {/* Create New Project Button */}
               <button
                 onClick={handleOpenDialog}
-                className="flex w-full items-center rounded-md px-3 py-3 text-gray-600 transition-all duration-200 hover:bg-rose-700/10 hover:text-rose-700 md:py-2"
+                className="flex w-full items-center rounded-md border border-dashed border-gray-300 px-3 py-3 text-gray-600 transition-all duration-200 hover:border-rose-700/50 hover:bg-rose-700/10 hover:text-rose-700 md:py-2"
               >
                 <div className="flex w-full items-center space-x-3 md:space-x-2">
-                  <PenTool size={16} className="flex-shrink-0" />
-                  <span className="text-base font-medium md:text-sm">Create</span>
+                  <Plus size={16} className="flex-shrink-0" />
+                  <span className="text-base font-medium md:text-sm">New Project</span>
                 </div>
               </button>
 
@@ -298,13 +298,13 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleOpenDialog}
-                    className="flex h-10 w-10 items-center justify-center rounded-md text-gray-600 transition-all duration-200 hover:bg-rose-700/10 hover:text-rose-700 md:h-8 md:w-8"
+                    className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-gray-300 text-gray-600 transition-all duration-200 hover:border-rose-700/50 hover:bg-rose-700/10 hover:text-rose-700 md:h-8 md:w-8"
                   >
-                    <PenTool size={16} />
+                    <Plus size={16} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={8}>
-                  Create
+                  New Project
                 </TooltipContent>
               </Tooltip>
 
