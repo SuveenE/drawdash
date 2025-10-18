@@ -6,6 +6,7 @@ import { generateImage } from '@/actions/image';
 import { Tldraw, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 
+import { BeforeAfterSlider } from '@/components/canvas/before-after-slider';
 import { ImageSidebar } from '@/components/canvas/image-sidebar';
 
 // Extend Window interface for Speech Recognition API
@@ -24,6 +25,15 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [imageUsed, setImageUsed] = useState(false);
+  const [showSlider, setShowSlider] = useState(false);
+  const [beforeImage, setBeforeImage] = useState<string | null>(null);
+  const [afterImage, setAfterImage] = useState<string | null>(null);
+  const [frameBounds, setFrameBounds] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [projectId] = useState<string>(() => {
     // Generate a UUID for the project session
     return '6e8dec9f-4d2c-4b7e-9053-28e5ebe4aeb9';
@@ -96,23 +106,45 @@ export default function Home() {
     }
   };
 
-  const handleAcceptImage = useCallback(async () => {
-    if (!editorRef.current || !frameId || !generatedImage) {
-      setError('Canvas not ready or no image available');
-      return;
-    }
+  // Helper to capture current canvas state as data URL
+  const captureCanvasSnapshot = useCallback(async (): Promise<string | null> => {
+    if (!editorRef.current || !frameId) return null;
 
-    try {
+    const editor = editorRef.current;
+    const frame = editor.getShape(frameId);
+    if (!frame) return null;
+
+    const childShapeIds = editor.getSortedChildIdsForParent(frameId).filter((id: string) => {
+      const shape = editor.getShape(id);
+      return shape && !shape.isLocked;
+    });
+
+    const shapeIdsToExport = [frameId, ...childShapeIds];
+
+    const { blob } = await editor.toImage(shapeIdsToExport, {
+      format: 'png',
+      background: true,
+      padding: 0,
+    });
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  }, [frameId]);
+
+  // Helper to create a preview with the new image
+  const createAfterPreview = useCallback(
+    async (imageBase64: string): Promise<string | null> => {
+      if (!editorRef.current || !frameId) return null;
+
       const editor = editorRef.current;
       const frame = editor.getShape(frameId);
+      if (!frame) return null;
 
-      if (!frame) {
-        setError('Frame not found');
-        return;
-      }
-
-      // Convert base64 to data URL
-      const dataUrl = `data:image/png;base64,${generatedImage}`;
+      // Store current state to restore later
+      const dataUrl = `data:image/png;base64,${imageBase64}`;
 
       // Get image dimensions
       const img = document.createElement('img');
@@ -123,18 +155,18 @@ export default function Home() {
       img.src = dataUrl;
       const { width: imageWidth, height: imageHeight } = await imageLoadPromise;
 
-      // Create asset ID with the required "asset:" prefix
+      // Create temporary asset and shape
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const assetId = `asset:${createShapeId()}` as any;
+      const tempAssetId = `asset:${createShapeId()}` as any;
+      const tempShapeId = createShapeId();
 
-      // Create the asset
       editor.createAssets([
         {
-          id: assetId,
+          id: tempAssetId,
           type: 'image',
           typeName: 'asset',
           props: {
-            name: 'test.png',
+            name: 'preview.png',
             src: dataUrl,
             w: imageWidth,
             h: imageHeight,
@@ -145,22 +177,197 @@ export default function Home() {
         },
       ]);
 
-      // Get frame dimensions
       const frameProps = frame.props as { w: number; h: number };
-
-      // Calculate scaled dimensions to fit in frame
       const maxWidth = frameProps.w * 0.8;
       const maxHeight = frameProps.h * 0.8;
       const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight, 1);
       const scaledWidth = imageWidth * scale;
       const scaledHeight = imageHeight * scale;
-
-      // Calculate position to center the image within the frame
-      // Since we're using parentId, coordinates are relative to the frame's origin (0,0)
       const imageX = (frameProps.w - scaledWidth) / 2;
       const imageY = (frameProps.h - scaledHeight) / 2;
 
-      // Create the image shape
+      editor.createShapes([
+        {
+          id: tempShapeId,
+          type: 'image',
+          x: imageX,
+          y: imageY,
+          parentId: frameId,
+          props: {
+            w: scaledWidth,
+            h: scaledHeight,
+            assetId: tempAssetId,
+          },
+        },
+      ]);
+
+      // Wait a tick for the shape to render
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Capture the preview
+      const preview = await captureCanvasSnapshot();
+
+      // Clean up temporary shape and asset
+      editor.deleteShapes([tempShapeId]);
+      editor.deleteAssets([tempAssetId]);
+
+      return preview;
+    },
+    [frameId, captureCanvasSnapshot],
+  );
+
+  // Load test image as base64
+  const loadTestImage = useCallback(async (): Promise<string> => {
+    const response = await fetch('/test.png');
+    const blob = await response.blob();
+    return new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }, []);
+
+  // Get frame bounds in screen coordinates
+  const getFrameBounds = useCallback(() => {
+    if (!editorRef.current || !frameId) return null;
+
+    const editor = editorRef.current;
+    const frame = editor.getShape(frameId);
+    if (!frame) return null;
+
+    // Get the frame's page bounds (in canvas coordinates)
+    const bounds = editor.getShapePageBounds(frameId);
+
+    if (!bounds) return null;
+
+    // Convert canvas coordinates to screen coordinates
+    const { x, y } = editor.pageToScreen({ x: bounds.x, y: bounds.y });
+    const bottomRight = editor.pageToScreen({ x: bounds.maxX, y: bounds.maxY });
+
+    return {
+      x,
+      y,
+      width: bottomRight.x - x,
+      height: bottomRight.y - y,
+    };
+  }, [frameId]);
+
+  // Show the before/after slider animation
+  const handleAcceptImage = useCallback(async () => {
+    if (!editorRef.current || !frameId) {
+      setError('Canvas not ready');
+      return;
+    }
+
+    try {
+      // If no generated image, use test.png for testing
+      let imageToUse = generatedImage;
+      if (!imageToUse) {
+        const testImageBase64 = await loadTestImage();
+        setGeneratedImage(testImageBase64);
+        imageToUse = testImageBase64;
+      }
+
+      // Capture before state first
+      const before = await captureCanvasSnapshot();
+      if (!before) {
+        setError('Failed to capture canvas state');
+        return;
+      }
+
+      // Get frame bounds for positioning the slider
+      const bounds = getFrameBounds();
+      setFrameBounds(bounds);
+
+      // Show the before image immediately to hide canvas operations
+      setBeforeImage(before);
+      setAfterImage(null); // Will be set shortly
+      setShowSlider(true);
+
+      // Small delay to ensure overlay is shown
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Create after preview using the image we have (happens behind overlay now)
+      const after = await createAfterPreview(imageToUse);
+      if (!after) {
+        setError('Failed to create preview');
+        setShowSlider(false);
+        return;
+      }
+
+      // Update with the after image
+      setAfterImage(after);
+    } catch (err) {
+      console.error('Error preparing slider:', err);
+      setError(err instanceof Error ? err.message : 'Failed to prepare preview');
+      setShowSlider(false);
+    }
+  }, [
+    frameId,
+    generatedImage,
+    loadTestImage,
+    captureCanvasSnapshot,
+    createAfterPreview,
+    getFrameBounds,
+  ]);
+
+  // Actually place the image on the canvas (called after slider completes)
+  const placeImageOnCanvas = useCallback(async () => {
+    if (!editorRef.current || !frameId || !generatedImage) return;
+
+    try {
+      const editor = editorRef.current;
+      const frame = editor.getShape(frameId);
+      if (!frame) return;
+
+      // CLEAR ALL EXISTING SHAPES IN THE FRAME FIRST
+      const childShapeIds = editor.getSortedChildIdsForParent(frameId);
+      if (childShapeIds.length > 0) {
+        editor.deleteShapes(childShapeIds);
+      }
+
+      const dataUrl = `data:image/png;base64,${generatedImage}`;
+
+      const img = document.createElement('img');
+      const imageLoadPromise = new Promise<{ width: number; height: number }>((resolve, reject) => {
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.onerror = reject;
+      });
+      img.src = dataUrl;
+      const { width: imageWidth, height: imageHeight } = await imageLoadPromise;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const assetId = `asset:${createShapeId()}` as any;
+
+      editor.createAssets([
+        {
+          id: assetId,
+          type: 'image',
+          typeName: 'asset',
+          props: {
+            name: 'generated.png',
+            src: dataUrl,
+            w: imageWidth,
+            h: imageHeight,
+            mimeType: 'image/png',
+            isAnimated: false,
+          },
+          meta: {},
+        },
+      ]);
+
+      const frameProps = frame.props as { w: number; h: number };
+      const maxWidth = frameProps.w * 0.8;
+      const maxHeight = frameProps.h * 0.8;
+      const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight, 1);
+      const scaledWidth = imageWidth * scale;
+      const scaledHeight = imageHeight * scale;
+      const imageX = (frameProps.w - scaledWidth) / 2;
+      const imageY = (frameProps.h - scaledHeight) / 2;
+
       const imageShapeId = createShapeId();
       editor.createShapes([
         {
@@ -178,6 +385,7 @@ export default function Home() {
       ]);
 
       setImageUsed(true);
+      setShowSlider(false);
       console.log('Image placed in frame');
     } catch (err) {
       console.error('Error placing image:', err);
@@ -193,6 +401,13 @@ export default function Home() {
   // Keyboard shortcuts for Accept/Reject
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If slider is showing, ESC cancels it
+      if (showSlider && e.key === 'Escape') {
+        e.preventDefault();
+        setShowSlider(false);
+        return;
+      }
+
       // Only trigger if buttons are visible
       if (imageUsed || !generatedImage) return;
 
@@ -207,7 +422,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [imageUsed, generatedImage, handleAcceptImage, handleRejectImage]);
+  }, [imageUsed, generatedImage, showSlider, handleAcceptImage, handleRejectImage]);
 
   const exportCanvasImage = async (): Promise<string | null> => {
     if (!editorRef.current || !frameId) return null;
@@ -357,6 +572,17 @@ export default function Home() {
         onRejectImage={handleRejectImage}
         canvasReady={!!(frameId && editorRef.current)}
       />
+
+      {/* Before/After Slider Overlay */}
+      {showSlider && beforeImage && (
+        <BeforeAfterSlider
+          beforeImageUrl={beforeImage}
+          afterImageUrl={afterImage || ''}
+          onComplete={placeImageOnCanvas}
+          onCancel={() => setShowSlider(false)}
+          frameBounds={frameBounds || undefined}
+        />
+      )}
     </div>
   );
 }
