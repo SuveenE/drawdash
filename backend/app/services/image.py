@@ -6,6 +6,7 @@ from google import genai
 from PIL import Image
 
 from app.models.image import ImageGenerationRequest, ImageGenerationResponse
+from app.utils.prompts import EDIT_PROMPT, GENERATE_PROMPT
 
 log = logging.getLogger(__name__)
 
@@ -27,14 +28,11 @@ class ImageService:
         Returns:
             ImageGenerationResponse containing the generated image data
         """
-        log.info(f"Generating image with prompt: {input.prompt}")
+        log.info(f"Generating image with type '{input.type}' and prompt: {input.prompt}")
 
-        prompt = f"""Generate a drawing image based on the following reference image of a drawing and the explanation by the user.
-        The image background should match the reference image background. You are just drawing diagrams, so make sure you are not over verbose.
-        But if there are paragraphs in the image, you should keep them there.
-
-        The main goal should be to create a diagram. If the components or items of the diagram is explained in the user voice explanation, you should item or component name them in the diagram.
-        User voice explanation: {input.prompt}"""
+        # Select prompt template based on operation type
+        prompt_template = GENERATE_PROMPT if input.type == "generate" else EDIT_PROMPT
+        prompt = prompt_template.format(user_prompt=input.prompt)
 
         # Prepare reference image if provided
         reference_image = None
