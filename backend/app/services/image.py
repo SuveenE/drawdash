@@ -29,7 +29,10 @@ class ImageService:
         """
         log.info(f"Generating image with prompt: {input.prompt}")
 
-        prompt = f"Generate an whiteboard drawingimage based on the following prompt and the reference image: {input.prompt}"
+        prompt = f"""Generate a drawing image based on the following prompt and the reference image.
+        The image background should match the reference image background. You are just drawing diagrams, so make sure you are not over verbose.
+        But if there are paragraphs in the image, you should keep them there.
+        Prompt: {input.prompt}"""
 
         # Prepare reference image if provided
         reference_image = None
