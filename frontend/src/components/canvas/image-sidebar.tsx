@@ -2,9 +2,9 @@
 
 import Image from 'next/image';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Mic } from 'lucide-react';
+import { Binoculars, Brain, Mic, Paintbrush } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,20 @@ export function ImageSidebar({
   canvasReady,
 }: ImageSidebarProps) {
   const [activeTab, setActiveTab] = useState('agent');
+  const [isThinking, setIsThinking] = useState(false);
+
+  // Handle thinking -> sketching transition
+  useEffect(() => {
+    if (isGenerating) {
+      setIsThinking(true);
+      const timer = setTimeout(() => {
+        setIsThinking(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsThinking(false);
+    }
+  }, [isGenerating]);
 
   return (
     <>
@@ -55,6 +69,30 @@ export function ImageSidebar({
         }
         .animate-scale-pulse {
           animation: scale-pulse 2s ease-in-out infinite;
+        }
+        @keyframes wave {
+          0%,
+          100% {
+            height: 4px;
+          }
+          50% {
+            height: 16px;
+          }
+        }
+        .wave-bar {
+          width: 3px;
+          background: currentColor;
+          border-radius: 2px;
+          animation: wave 0.8s ease-in-out infinite;
+        }
+        .wave-bar:nth-child(1) {
+          animation-delay: 0s;
+        }
+        .wave-bar:nth-child(2) {
+          animation-delay: 0.1s;
+        }
+        .wave-bar:nth-child(3) {
+          animation-delay: 0.2s;
         }
       `}</style>
       <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white p-6 pt-4">
@@ -79,7 +117,7 @@ export function ImageSidebar({
               <Button
                 onClick={onAcceptImage}
                 variant="outline"
-                className="flex-1 border-2 border-green-600 bg-green-50 text-green-700 shadow-sm hover:bg-green-100 hover:text-green-800"
+                className="flex-1 border border-green-600 bg-green-50 text-green-600 shadow-sm hover:bg-green-100 hover:text-green-700"
                 disabled={!canvasReady}
               >
                 Accept (Tab)
@@ -87,7 +125,7 @@ export function ImageSidebar({
               <Button
                 onClick={onRejectImage}
                 variant="outline"
-                className="flex-1 border-2 border-red-600 bg-red-50 text-red-700 shadow-sm hover:bg-red-100 hover:text-red-800"
+                className="flex-1 border border-red-600 bg-red-50 text-red-600 shadow-sm hover:bg-red-100 hover:text-red-700"
                 disabled={!canvasReady}
               >
                 Reject (Esc)
@@ -108,7 +146,14 @@ export function ImageSidebar({
 
           <TabsContent value="agent" className="mt-0 flex flex-col gap-6">
             {/* Agent Mode Description */}
-            <div className="flex items-center gap-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm text-blue-900">
+                Agent mode listens to your explanations and proactively suggests diagram changes.
+              </p>
+            </div>
+
+            {/* Microphone Control */}
+            <div className="flex items-center justify-center gap-3">
               <button
                 onClick={onToggleListening}
                 className="flex-shrink-0 cursor-pointer transition-transform hover:scale-110"
@@ -123,14 +168,41 @@ export function ImageSidebar({
                   </div>
                 )}
               </button>
-              <p className="text-sm text-blue-900">
-                Agent mode listens to your explanations and proactively suggests diagram changes.
-              </p>
+              {/* Waveform Animation or Start Message */}
+              {isListening ? (
+                <div className="flex items-center gap-1 text-red-500">
+                  <div className="wave-bar"></div>
+                  <div className="wave-bar"></div>
+                  <div className="wave-bar"></div>
+                </div>
+              ) : (
+                <span className="text-sm text-gray-600">Press to start</span>
+              )}
             </div>
 
             {/* Live Transcript Display */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-900">Live Transcript</label>
+              <div className="flex items-center justify-between text-sm font-medium text-gray-900">
+                <span>Live Transcript</span>
+                {isListening && (
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <Binoculars className="h-3.5 w-3.5" />
+                    <span className="text-xs">observing</span>
+                  </div>
+                )}
+                {isGenerating && isThinking && (
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <Brain className="h-3.5 w-3.5" />
+                    <span className="text-xs">thinking</span>
+                  </div>
+                )}
+                {isGenerating && !isThinking && (
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <Paintbrush className="h-3.5 w-3.5" />
+                    <span className="text-xs">sketching</span>
+                  </div>
+                )}
+              </div>
               <div className="max-h-[200px] min-h-[80px] w-full overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
                 {transcript || (
                   <span className="text-gray-400">Click the microphone icon above to begin...</span>
