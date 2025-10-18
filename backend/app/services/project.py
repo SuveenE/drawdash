@@ -4,7 +4,8 @@ from uuid import uuid4
 
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import Project, ProjectCreateRequest, ProjectUpdateRequest
+from app.models.project import (Project, ProjectCreateRequest,
+                                ProjectUpdateRequest)
 
 log = logging.getLogger(__name__)
 
@@ -76,9 +77,7 @@ class ProjectService:
 
             # Insert into projects table
             response = (
-                await supabase_client.table("projects")
-                .insert(new_project)
-                .execute()
+                await supabase_client.table("projects").insert(new_project).execute()
             )
 
             if not response.data or len(response.data) == 0:

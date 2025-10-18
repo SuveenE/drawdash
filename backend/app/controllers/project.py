@@ -2,12 +2,8 @@ import logging
 
 from fastapi import APIRouter, Header, HTTPException
 
-from app.models.project import (
-    Project,
-    ProjectCreateRequest,
-    ProjectListResponse,
-    ProjectUpdateRequest,
-)
+from app.models.project import (Project, ProjectCreateRequest,
+                                ProjectListResponse, ProjectUpdateRequest)
 from app.services.project import ProjectService
 from app.utils.database import db_client
 
