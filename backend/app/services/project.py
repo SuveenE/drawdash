@@ -250,7 +250,7 @@ class ProjectService:
 
         try:
             # Construct the full prompt with style modifiers
-            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D icon png with the following style: {request.style}. Also make sure you don't include text in the image."
+            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D smooth icon png with the following style: {request.style}. Also make sure you don't include text in the image."
 
             # Define callback to log queue updates
             def on_queue_update(update):
@@ -259,9 +259,9 @@ class ProjectService:
                         log.info(f"Fal AI: {log_entry['message']}")
 
             # Call Fal AI to generate the icon using the queue system
-            # Using FLUX Pro for high-quality 3D icon generation
+            # Using nano-banana for high-quality 3D icon generation with example image
             result = fal_client.subscribe(
-                "fal-ai/nano-banana",
+                "fal-ai/nano-banana/",
                 arguments={
                     "prompt": full_prompt,
                 },
@@ -277,6 +277,26 @@ class ProjectService:
             # Extract the image URL from the response
             image_url = result["images"][0]["url"]
             log.info(f"Successfully generated 3D icon: {image_url}")
+
+            # Remove background from the generated icon
+            log.info("Removing background from generated icon")
+            rembg_result = fal_client.subscribe(
+                "fal-ai/imageutils/rembg",
+                arguments={
+                    "image_url": image_url,
+                },
+                with_logs=True,
+                on_queue_update=on_queue_update,
+            )
+
+            # Validate rembg response
+            if not rembg_result or "image" not in rembg_result:
+                log.error(f"Invalid response from rembg API: {rembg_result}")
+                raise RuntimeError("Failed to remove background from image")
+
+            # Use the background-removed image URL
+            image_url = rembg_result["image"]["url"]
+            log.info(f"Successfully removed background: {image_url}")
 
             # Generate topic description
             log.info(f"Generating topic description for project: {request.project_id}")
@@ -345,7 +365,7 @@ class ProjectService:
             # Fetch image pairs associated with the project to understand context
             response = (
                 await supabase_client.table("image_pairs")
-                .select("prompt, before_description, after_description")
+                .select("prompt_text")
                 .eq("project_id", project_id)
                 .limit(5)
                 .order("created_at", desc=True)
@@ -362,14 +382,10 @@ class ProjectService:
                 context_parts.append(f"Project Description: {project.description}")
 
             if image_pairs:
-                context_parts.append("\nRecent prompts and descriptions:")
+                context_parts.append("\nRecent prompts:")
                 for idx, pair in enumerate(image_pairs[:3], 1):
-                    if pair.get("prompt"):
-                        context_parts.append(f"{idx}. Prompt: {pair['prompt']}")
-                    if pair.get("before_description"):
-                        context_parts.append(f"   Before: {pair['before_description']}")
-                    if pair.get("after_description"):
-                        context_parts.append(f"   After: {pair['after_description']}")
+                    if pair.get("prompt_text"):
+                        context_parts.append(f"{idx}. Prompt: {pair['prompt_text']}")
 
             context = "\n".join(context_parts)
 
@@ -381,8 +397,7 @@ class ProjectService:
             client = OpenAI()
 
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                max_tokens=50,
+                model="gpt-4.1",
                 messages=[
                     {
                         "role": "user",
