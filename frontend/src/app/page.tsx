@@ -46,6 +46,13 @@ export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const autoGenerateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const transcriptRef = useRef<string>('');
+  const handleGenerateRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Keep transcript ref in sync with transcript state
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
 
   useEffect(() => {
     // Check if browser supports Speech Recognition
@@ -111,8 +118,17 @@ export default function Home() {
       if (isCanvasEmpty) {
         console.log('Agent Mode detected: Auto-generate will trigger in 20 seconds');
         autoGenerateTimerRef.current = setTimeout(() => {
-          console.log('Auto-generating image after 20 seconds in Agent Mode');
-          handleGenerate();
+          // Only auto-generate if we have a transcript (use ref to get latest value)
+          const currentTranscript = transcriptRef.current.trim();
+          if (currentTranscript && handleGenerateRef.current) {
+            console.log(
+              'Auto-generating image after 20 seconds in Agent Mode with transcript:',
+              currentTranscript,
+            );
+            handleGenerateRef.current();
+          } else {
+            console.log('No transcript available yet, skipping auto-generate');
+          }
         }, 20000); // 20 seconds
       }
     }
@@ -460,7 +476,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [imageUsed, generatedImage, showSlider, handleAcceptImage, handleRejectImage]);
 
-  const exportCanvasImage = async (): Promise<string | null> => {
+  const exportCanvasImage = useCallback(async (): Promise<string | null> => {
     if (!editorRef.current || !frameId) return null;
 
     const editor = editorRef.current;
@@ -497,9 +513,9 @@ export default function Home() {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
-  };
+  }, [frameId]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!transcript.trim()) {
       setError('Please provide a voice prompt first');
       return;
@@ -533,7 +549,12 @@ export default function Home() {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [transcript, exportCanvasImage, projectId]);
+
+  // Keep handleGenerate ref in sync
+  useEffect(() => {
+    handleGenerateRef.current = handleGenerate;
+  }, [handleGenerate]);
 
   return (
     <div className="flex h-full w-full bg-white">
