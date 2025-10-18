@@ -185,6 +185,9 @@ export default function Home() {
         </div>
         <div className="flex-1">
           <Tldraw
+            components={{
+              StylePanel: null,
+            }}
             onMount={(editor) => {
               editorRef.current = editor;
 
