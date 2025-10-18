@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +11,10 @@ class ImageGenerationRequest(BaseModel):
     )
     project_id: str = Field(
         description="The project ID to associate with this image pair."
+    )
+    type: Literal["generate", "edit"] = Field(
+        default="generate",
+        description="The type of operation: 'generate' for new images or 'edit' for modifying existing images.",
     )
 
 
