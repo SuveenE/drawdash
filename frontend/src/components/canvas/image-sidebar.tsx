@@ -50,11 +50,11 @@ export function ImageSidebar({
               className="object-contain"
             />
           ) : (
-            <span className="text-sm text-gray-500">No image generated yet</span>
+            <Image src="/test.png" alt="Test preview" fill className="object-contain" />
           )}
         </div>
-        {!imageUsed && generatedImage && (
-          <div className="flex gap-3">
+        {!imageUsed && (generatedImage || true) && (
+          <div className="flex gap-4">
             <Button
               onClick={onAcceptImage}
               variant="outline"
