@@ -67,7 +67,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           : 'flex h-10 w-10 items-center justify-center rounded-md md:h-8 md:w-8'
       } ${
         isSelected
-          ? 'border border-blue-600/30 bg-blue-600/10 text-blue-600'
+          ? 'border border-rose-700/30 bg-rose-700/10 text-rose-700'
           : isHovered
             ? 'bg-gray-100 text-gray-700'
             : 'text-gray-600 hover:text-gray-700'
