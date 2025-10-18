@@ -9,6 +9,7 @@ class ImageGenerationRequest(BaseModel):
         default=None,
         description="Optional base64 encoded image data to use as input for image generation.",
     )
+    project_id: str = Field(description="The project ID to associate with this image pair.")
 
 
 class ImageGenerationResponse(BaseModel):
