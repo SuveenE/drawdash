@@ -7,6 +7,7 @@ export interface Project {
   user_id: string;
   name: string;
   description?: string;
+  snapshot?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

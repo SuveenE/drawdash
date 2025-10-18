@@ -8,7 +8,7 @@ import { generateImage } from '@/actions/image';
 import { DEFAULT_USER_ID, updateProject } from '@/actions/projects';
 import { useProject } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
-import { Tldraw, createShapeId } from 'tldraw';
+import { Tldraw, createShapeId, getSnapshot, loadSnapshot } from 'tldraw';
 import 'tldraw/tldraw.css';
 
 import { BeforeAfterSlider } from '@/components/canvas/before-after-slider';
@@ -57,6 +57,9 @@ export default function ProjectCanvasPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedSnapshotRef = useRef(false);
 
   // Helper to determine current mode (Agent Mode = empty canvas, Ask Mode = has content)
   const isAgentMode = useCallback((): boolean => {
@@ -650,31 +653,113 @@ export default function ProjectCanvasPage() {
     [saveProjectName, cancelEditingName],
   );
 
+  // Save canvas state to database
+  const saveCanvas = useCallback(async () => {
+    if (!editorRef.current) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const editor = editorRef.current;
+      const snapshot = getSnapshot(editor.store);
+
+      await updateProject(projectId, DEFAULT_USER_ID, {
+        snapshot: snapshot.document as unknown as Record<string, unknown>,
+      });
+
+      console.log('Canvas saved successfully');
+    } catch (err) {
+      console.error('Error saving canvas:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save canvas');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [projectId]);
+
+  // Load canvas state from database when project loads
+  useEffect(() => {
+    if (!editorRef.current || !project?.snapshot || !frameId || hasLoadedSnapshotRef.current)
+      return;
+
+    try {
+      const editor = editorRef.current;
+      // Load the snapshot into the store as a remote change to avoid triggering auto-save
+      editor.store.mergeRemoteChanges(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        loadSnapshot(editor.store, { document: project.snapshot as any });
+      });
+      hasLoadedSnapshotRef.current = true;
+      console.log('Canvas loaded from database');
+    } catch (err) {
+      console.error('Error loading canvas:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load canvas');
+    }
+  }, [project?.snapshot, frameId]);
+
+  // Auto-save with debounce - listen for canvas changes
+  useEffect(() => {
+    if (!editorRef.current || !frameId) return;
+
+    const editor = editorRef.current;
+
+    // Listen for changes to the document
+    const unlisten = editor.store.listen(
+      () => {
+        // Clear any existing timer
+        if (saveDebounceTimerRef.current) {
+          clearTimeout(saveDebounceTimerRef.current);
+        }
+
+        // Set new timer to save after 2.5 seconds of inactivity
+        saveDebounceTimerRef.current = setTimeout(() => {
+          // Only save if we've loaded the initial snapshot
+          if (hasLoadedSnapshotRef.current) {
+            saveCanvas();
+          }
+        }, 2500);
+      },
+      { scope: 'document', source: 'user' },
+    );
+
+    // Cleanup
+    return () => {
+      unlisten();
+      if (saveDebounceTimerRef.current) {
+        clearTimeout(saveDebounceTimerRef.current);
+      }
+    };
+  }, [frameId, saveCanvas]);
+
   return (
     <div className="flex h-full w-full bg-white">
       {/* Left Side - Drawing Canvas */}
       <div className="flex flex-1 flex-col bg-white">
-        <div className="border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
-          <span className="text-gray-500">Projects/</span>
-          {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              onBlur={saveProjectName}
-              onKeyDown={handleNameKeyDown}
-              className="mx-1 border-none bg-transparent px-1 text-gray-900 underline outline-none"
-            />
-          ) : (
-            <span
-              className="cursor-pointer px-1 underline decoration-gray-400 decoration-dotted underline-offset-2 hover:decoration-gray-600"
-              onClick={startEditingName}
-              title="Click to edit project name"
-            >
-              {project?.name || 'Loading...'}
-            </span>
-          )}
+        <div className="flex items-center justify-between border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
+          <div>
+            <span className="text-gray-500">Projects/</span>
+            {isEditingName ? (
+              <input
+                ref={nameInputRef}
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onBlur={saveProjectName}
+                onKeyDown={handleNameKeyDown}
+                className="mx-1 border-none bg-transparent px-1 text-gray-900 underline outline-none"
+              />
+            ) : (
+              <span
+                className="cursor-pointer px-1 underline decoration-gray-400 decoration-dotted underline-offset-2 hover:decoration-gray-600"
+                onClick={startEditingName}
+                title="Click to edit project name"
+              >
+                {project?.name || 'Loading...'}
+              </span>
+            )}
+          </div>
+          {isSaving && <span className="text-xs text-gray-400">Saving...</span>}
         </div>
         <div className="flex-1">
           <Tldraw
