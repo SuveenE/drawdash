@@ -3,15 +3,27 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import React, { useState } from 'react';
 
-import { FolderOpen, Menu, PenTool, Settings, Sidebar, X } from 'lucide-react';
+import { DEFAULT_USER_ID, createProject } from '@/actions/projects';
+import { FolderOpen, Menu, Plus, Settings, Sidebar, X } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 enum SidebarTab {
-  CREATE = 'Create',
   PROJECTS = 'Projects',
   SETTINGS = 'Settings',
 }
@@ -23,7 +35,6 @@ interface SidebarTabInfo {
 }
 
 const sidebarTabs: SidebarTabInfo[] = [
-  { value: SidebarTab.CREATE, icon: <PenTool size={16} />, path: '/' },
   {
     value: SidebarTab.PROJECTS,
     icon: <FolderOpen size={16} />,
@@ -109,20 +120,22 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
 const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<SidebarTab | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [projectName, setProjectName] = useState('');
 
   // Determine the current tab based on the pathname
-  const getCurrentTab = (): SidebarTab => {
-    if (pathname === '/') {
-      return SidebarTab.CREATE;
-    } else if (pathname === '/projects' || pathname?.startsWith('/projects/')) {
+  const getCurrentTab = (): SidebarTab | null => {
+    if (pathname === '/projects' || pathname?.startsWith('/projects/')) {
       return SidebarTab.PROJECTS;
     } else if (pathname === '/settings' || pathname?.startsWith('/settings/')) {
       return SidebarTab.SETTINGS;
     }
-    return SidebarTab.CREATE; // Default fallback
+    return null; // No tab selected for other routes
   };
 
   const handleSidebarToggle = () => {
@@ -133,12 +146,47 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleTabHover = (tab: SidebarTab, isHovering: boolean) => {
+  const handleTabHover = (tab: SidebarTab | null, isHovering: boolean) => {
     setHoveredTab(isHovering ? tab : null);
   };
 
   const handleMobileTabClick = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleOpenDialog = () => {
+    setProjectName('');
+    setIsDialogOpen(true);
+  };
+
+  const handleCreateProject = async () => {
+    if (isCreatingProject || !projectName.trim()) return;
+
+    setIsCreatingProject(true);
+    try {
+      const newProject = await createProject({
+        user_id: DEFAULT_USER_ID,
+        name: projectName.trim(),
+        description: '',
+      });
+
+      toast.success('Project created successfully!');
+      setIsDialogOpen(false);
+      setProjectName('');
+      router.push(`/projects/${newProject.id}`);
+      setIsMobileMenuOpen(false);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      toast.error('Failed to create project. Please try again.');
+    } finally {
+      setIsCreatingProject(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && projectName.trim()) {
+      handleCreateProject();
+    }
   };
 
   const selectedTab = getCurrentTab();
@@ -185,6 +233,17 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
 
             {/* Navigation Items */}
             <div className="flex-1 space-y-1 px-2">
+              {/* Create New Project Button */}
+              <button
+                onClick={handleOpenDialog}
+                className="flex w-full items-center rounded-md border border-dashed border-gray-300 px-3 py-3 text-gray-600 transition-all duration-200 hover:border-rose-700/50 hover:bg-rose-700/10 hover:text-rose-700 md:py-2"
+              >
+                <div className="flex w-full items-center space-x-3 md:space-x-2">
+                  <Plus size={16} className="flex-shrink-0" />
+                  <span className="text-base font-medium md:text-sm">New Project</span>
+                </div>
+              </button>
+
               {sidebarTabs.map((tab) => (
                 <SidebarItem
                   key={tab.value}
@@ -234,6 +293,21 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
 
             {/* Navigation icons */}
             <div className="flex flex-1 flex-col items-center space-y-2 px-4">
+              {/* Create New Project Button (Collapsed) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleOpenDialog}
+                    className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-gray-300 text-gray-600 transition-all duration-200 hover:border-rose-700/50 hover:bg-rose-700/10 hover:text-rose-700 md:h-8 md:w-8"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  New Project
+                </TooltipContent>
+              </Tooltip>
+
               {sidebarTabs.map((tab) => (
                 <SidebarItem
                   key={tab.value}
@@ -294,6 +368,45 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
         </div>
         {children}
       </main>
+
+      {/* Create Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>Give your project a name to get started.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              id="name"
+              placeholder="Enter project name..."
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isCreatingProject}
+              className="border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:text-gray-900"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateProject}
+              disabled={isCreatingProject || !projectName.trim()}
+              className="bg-gray-900 text-white hover:bg-gray-800"
+            >
+              {isCreatingProject ? 'Creating...' : 'Create Project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

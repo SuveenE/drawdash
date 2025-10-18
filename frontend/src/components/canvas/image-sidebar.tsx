@@ -131,7 +131,7 @@ export function ImageSidebar({
             {/* Live Transcript Display */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-900">Live Transcript</label>
-              <div className="min-h-[80px] w-full rounded-md p-3 text-sm text-gray-700">
+              <div className="max-h-[200px] min-h-[80px] w-full overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
                 {transcript || (
                   <span className="text-gray-400">Click the microphone icon above to begin...</span>
                 )}
