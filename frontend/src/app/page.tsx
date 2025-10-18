@@ -281,7 +281,7 @@ export default function Home() {
   };
 
   return (
-    <div className="fixed inset-0 flex bg-white">
+    <div className="flex h-full w-full bg-white">
       {/* Left Side - Drawing Canvas */}
       <div className="flex flex-1 flex-col bg-white">
         <div className="border-b border-gray-200 bg-white p-2 text-center text-sm font-medium text-gray-900">

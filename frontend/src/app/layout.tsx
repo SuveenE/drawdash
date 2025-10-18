@@ -3,7 +3,9 @@ import { ThemeProvider } from 'next-themes';
 import { Inter } from 'next/font/google';
 
 import { QueryProvider } from '@/components/providers/query';
+import SidebarView from '@/components/shared/sidebar';
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 import './globals.css';
 
@@ -28,7 +30,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>{children}</QueryProvider>
+          <TooltipProvider>
+            <QueryProvider>
+              <SidebarView>{children}</SidebarView>
+            </QueryProvider>
+          </TooltipProvider>
         </ThemeProvider>
         <Toaster />
       </body>
