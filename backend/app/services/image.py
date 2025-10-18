@@ -28,7 +28,9 @@ class ImageService:
         Returns:
             ImageGenerationResponse containing the generated image data
         """
-        log.info(f"Generating image with type '{input.type}' and prompt: {input.prompt}")
+        log.info(
+            f"Generating image with type '{input.type}' and prompt: {input.prompt}"
+        )
 
         # Select prompt template based on operation type
         prompt_template = GENERATE_PROMPT if input.type == "generate" else EDIT_PROMPT
