@@ -21,7 +21,8 @@ export default function Home() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [agentTranscript, setAgentTranscript] = useState(''); // Transcript for Agent Mode
+  const [askTranscript, setAskTranscript] = useState(''); // Transcript for Ask Mode
   const [error, setError] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [imageUsed, setImageUsed] = useState(false);
@@ -49,10 +50,21 @@ export default function Home() {
   const transcriptRef = useRef<string>('');
   const handleGenerateRef = useRef<(() => Promise<void>) | null>(null);
 
-  // Keep transcript ref in sync with transcript state
+  // Helper to determine current mode (Agent Mode = empty canvas, Ask Mode = has content)
+  const isAgentMode = useCallback((): boolean => {
+    if (!editorRef.current || !frameId) return true; // Default to Agent Mode if not ready
+    const editor = editorRef.current;
+    const childShapeIds = editor.getSortedChildIdsForParent(frameId);
+    return childShapeIds.length === 0;
+  }, [frameId]);
+
+  // Get the appropriate transcript based on current mode
+  const currentTranscript = isAgentMode() ? agentTranscript : askTranscript;
+
+  // Keep transcript ref in sync with current transcript
   useEffect(() => {
-    transcriptRef.current = transcript;
-  }, [transcript]);
+    transcriptRef.current = currentTranscript;
+  }, [currentTranscript]);
 
   useEffect(() => {
     // Check if browser supports Speech Recognition
@@ -78,7 +90,12 @@ export default function Home() {
             }
           }
 
-          setTranscript((prev) => prev + finalTranscript);
+          // Update the appropriate transcript based on current mode
+          if (isAgentMode()) {
+            setAgentTranscript((prev) => prev + finalTranscript);
+          } else {
+            setAskTranscript((prev) => prev + finalTranscript);
+          }
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,7 +115,7 @@ export default function Home() {
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [isAgentMode]);
 
   // Auto-generate in Agent Mode after 20 seconds of listening
   useEffect(() => {
@@ -140,7 +157,7 @@ export default function Home() {
         autoGenerateTimerRef.current = null;
       }
     };
-  }, [isListening, frameId]);
+  }, [isListening, frameId, isAgentMode]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
@@ -152,7 +169,12 @@ export default function Home() {
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
-      setTranscript('');
+      // Clear the appropriate transcript based on current mode
+      if (isAgentMode()) {
+        setAgentTranscript('');
+      } else {
+        setAskTranscript('');
+      }
       recognitionRef.current.start();
       setIsListening(true);
     }
@@ -516,7 +538,9 @@ export default function Home() {
   }, [frameId]);
 
   const handleGenerate = useCallback(async () => {
-    if (!transcript.trim()) {
+    const activeTranscript = isAgentMode() ? agentTranscript : askTranscript;
+
+    if (!activeTranscript.trim()) {
       setError('Please provide a voice prompt first');
       return;
     }
@@ -531,7 +555,7 @@ export default function Home() {
       const requestType = canvasImageData ? 'edit' : 'generate';
 
       const data = await generateImage({
-        prompt: transcript,
+        prompt: activeTranscript,
         image_data: canvasImageData,
         project_id: projectId,
         type: requestType,
@@ -549,7 +573,7 @@ export default function Home() {
     } finally {
       setIsGenerating(false);
     }
-  }, [transcript, exportCanvasImage, projectId]);
+  }, [agentTranscript, askTranscript, exportCanvasImage, projectId, isAgentMode]);
 
   // Keep handleGenerate ref in sync
   useEffect(() => {
@@ -645,11 +669,18 @@ export default function Home() {
       <ImageSidebar
         generatedImage={generatedImage}
         imageUsed={imageUsed}
-        transcript={transcript}
+        transcript={currentTranscript}
         isListening={isListening}
         isGenerating={isGenerating}
         error={error}
-        onTranscriptChange={setTranscript}
+        onTranscriptChange={(value) => {
+          // Update the appropriate transcript based on current mode
+          if (isAgentMode()) {
+            setAgentTranscript(value);
+          } else {
+            setAskTranscript(value);
+          }
+        }}
         onToggleListening={toggleListening}
         onGenerate={handleGenerate}
         onAcceptImage={handleAcceptImage}
