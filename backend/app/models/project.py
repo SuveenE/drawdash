@@ -24,3 +24,24 @@ class Project(BaseModel):
 
 class ProjectListResponse(BaseModel):
     projects: List[Project] = Field(description="List of projects for the user.")
+
+
+class ProjectCreateRequest(BaseModel):
+    user_id: str = Field(description="The user ID who owns the project.")
+    name: str = Field(description="The name of the project.")
+    description: Optional[str] = Field(
+        default=None, description="The description of the project."
+    )
+    snapshot: Optional[Dict[str, Any]] = Field(
+        default=None, description="The snapshot data for the project."
+    )
+
+
+class ProjectUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, description="The name of the project.")
+    description: Optional[str] = Field(
+        default=None, description="The description of the project."
+    )
+    snapshot: Optional[Dict[str, Any]] = Field(
+        default=None, description="The snapshot data for the project."
+    )
