@@ -29,10 +29,12 @@ class ImageService:
         """
         log.info(f"Generating image with prompt: {input.prompt}")
 
-        prompt = f"""Generate a drawing image based on the following prompt and the reference image.
+        prompt = f"""Generate a drawing image based on the following reference image of a drawing and the explanation by the user.
         The image background should match the reference image background. You are just drawing diagrams, so make sure you are not over verbose.
         But if there are paragraphs in the image, you should keep them there.
-        Prompt: {input.prompt}"""
+
+        The main goal should be to create a diagram. If the components or items of the diagram is explained in the user voice explanation, you should item or component name them in the diagram.
+        User voice explanation: {input.prompt}"""
 
         # Prepare reference image if provided
         reference_image = None
