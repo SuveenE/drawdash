@@ -1,0 +1,96 @@
+name: CI checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  file-changes:
+    name: Check location of file changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }} 
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  backend-CI:
+    needs: file-changes
+    if: ${{ needs.file-changes.outputs.backend == 'true' }}
+    name: backend-CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.12.1
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.1'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          poetry install --no-interaction --no-root
+
+      - name: Run isort
+        working-directory: ./backend
+        run: |
+          poetry run isort --check-only --diff .
+
+      - name: Run autoflake
+        working-directory: ./backend
+        run: |
+          poetry run autoflake --remove-all-unused-imports --in-place --recursive --check --exclude=__init__.py --ignore-pass-after-docstring .
+
+      - name: Run black
+        working-directory: ./backend
+        run: |
+          poetry run black --check --diff .
+
+  frontend-CI:
+    needs: file-changes
+    if: ${{ needs.file-changes.outputs.frontend == 'true' }}
+    name: frontend-CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run Prettier
+        working-directory: ./frontend
+        run: npx prettier --check .
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint .
+      
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build

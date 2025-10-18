@@ -1,0 +1,73 @@
+{
+  "eslint.format.enable": true,
+  "editor.rulers": [
+    100
+  ],
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.requireConfig": true,
+  "eslint.workingDirectories": [
+    {
+      "directory": "./frontend",
+      "changeProcessCWD": true 
+    },
+  ],
+  "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+  },
+  "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": "always",
+          "source.fixAll": "explicit"
+      }
+  },
+  "editor.formatOnSave": true,
+  "files.insertFinalNewline": true,
+  "black-formatter.args": ["--line-length=100"],
+  "isort.args": [
+      "--line-length=100",
+      "--wrap-length=100",
+      "--multi-line=3",
+      "--trailing-comma",
+      "--profile=black",
+      "${workplaceFolder}/backend"
+  ],
+  "python.testing.pytestArgs": [
+      "tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "pylint.importStrategy": "fromEnvironment",
+  "pylint.args": [
+      "--rcfile=.pylintrc"
+  ],
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.useLibraryCodeForTypes": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+      "reportGeneralTypeIssues": "error",
+      "reportTypeVarUsage": "error",
+      "reportUnknownMemberType": "none"
+  },
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+}
