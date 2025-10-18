@@ -29,12 +29,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>
-            <div className="flex min-h-screen flex-col items-center justify-items-center space-y-4 p-8">
-              <Header />
-              {children}
-            </div>
-          </QueryProvider>
+          <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>
         <Toaster />
       </body>

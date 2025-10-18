@@ -22,6 +22,7 @@
     "react-dom": "^19.0.0",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
+    "tldraw": "^4.1.1",
     "zod": "^3.25.56"
   },
   "devDependencies": {
