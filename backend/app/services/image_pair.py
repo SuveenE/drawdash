@@ -40,11 +40,12 @@ class ImagePairService:
 
             # Convert to ImagePair models
             image_pairs = [ImagePair(**pair_data) for pair_data in response.data]
-            log.info(f"Found {len(image_pairs)} image pairs for project_id: {project_id}")
+            log.info(
+                f"Found {len(image_pairs)} image pairs for project_id: {project_id}"
+            )
 
             return image_pairs
 
         except Exception as e:
             log.error(f"Error fetching image pairs for project_id {project_id}: {e}")
             raise RuntimeError(f"Failed to fetch image pairs: {e}")
-

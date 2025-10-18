@@ -12,7 +12,7 @@ export interface ImagePair {
   output_width?: number;
   output_height?: number;
   prompt_text?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

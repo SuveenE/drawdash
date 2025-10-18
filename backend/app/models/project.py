@@ -14,10 +14,13 @@ class Project(BaseModel):
     snapshot: Optional[Dict[str, Any]] = Field(
         default=None, description="The snapshot data for the project."
     )
-    created_at: datetime = Field(description="The timestamp when the project was created.")
-    updated_at: datetime = Field(description="The timestamp when the project was last updated.")
+    created_at: datetime = Field(
+        description="The timestamp when the project was created."
+    )
+    updated_at: datetime = Field(
+        description="The timestamp when the project was last updated."
+    )
 
 
 class ProjectListResponse(BaseModel):
     projects: List[Project] = Field(description="List of projects for the user.")
-

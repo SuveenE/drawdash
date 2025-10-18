@@ -47,4 +47,3 @@ class ImagePairListResponse(BaseModel):
     image_pairs: List[ImagePair] = Field(
         description="List of image pairs for the project."
     )
-

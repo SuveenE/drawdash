@@ -47,4 +47,3 @@ class ProjectService:
         except Exception as e:
             log.error(f"Error fetching projects for user_id {user_id}: {e}")
             raise RuntimeError(f"Failed to fetch projects: {e}")
-

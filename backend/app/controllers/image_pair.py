@@ -53,4 +53,3 @@ class ImagePairController:
                 raise HTTPException(
                     status_code=500, detail="An unexpected error occurred"
                 )
-
