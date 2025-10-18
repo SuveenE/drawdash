@@ -7,11 +7,8 @@ from app.models.project import IconGenerationRequest, ProjectUpdateRequest
 from app.services.image import ImageService
 from app.services.project import ProjectService
 from app.utils.database import db_client
-from app.utils.storage import (
-    download_and_upload_image_from_url,
-    save_image_pair_to_db,
-    upload_image_to_storage,
-)
+from app.utils.storage import (download_and_upload_image_from_url,
+                               save_image_pair_to_db, upload_image_to_storage)
 
 log = logging.getLogger(__name__)
 

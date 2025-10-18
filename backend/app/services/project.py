@@ -6,13 +6,9 @@ import fal_client
 from openai import OpenAI
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (
-    IconGenerationRequest,
-    IconGenerationResponse,
-    Project,
-    ProjectCreateRequest,
-    ProjectUpdateRequest,
-)
+from app.models.project import (IconGenerationRequest, IconGenerationResponse,
+                                Project, ProjectCreateRequest,
+                                ProjectUpdateRequest)
 
 log = logging.getLogger(__name__)
 
