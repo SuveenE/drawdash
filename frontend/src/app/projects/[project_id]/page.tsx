@@ -5,8 +5,9 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { generateImage } from '@/actions/image';
-import { DEFAULT_USER_ID } from '@/actions/projects';
+import { DEFAULT_USER_ID, updateProject } from '@/actions/projects';
 import { useProject } from '@/hooks/useProject';
+import { useQueryClient } from '@tanstack/react-query';
 import { Tldraw, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 
@@ -24,6 +25,7 @@ interface WindowWithSpeechRecognition extends Window {
 export default function ProjectCanvasPage() {
   const params = useParams();
   const projectId = params.project_id as string;
+  const queryClient = useQueryClient();
 
   // Fetch project data
   const { data: project } = useProject(projectId, DEFAULT_USER_ID);
@@ -52,6 +54,9 @@ export default function ProjectCanvasPage() {
   const autoGenerateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptRef = useRef<string>('');
   const handleGenerateRef = useRef<(() => Promise<void>) | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to determine current mode (Agent Mode = empty canvas, Ask Mode = has content)
   const isAgentMode = useCallback((): boolean => {
@@ -583,13 +588,93 @@ export default function ProjectCanvasPage() {
     handleGenerateRef.current = handleGenerate;
   }, [handleGenerate]);
 
+  // Start editing project name
+  const startEditingName = useCallback(() => {
+    if (project?.name) {
+      setEditedName(project.name);
+      setIsEditingName(true);
+    }
+  }, [project?.name]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  // Save edited project name
+  const saveProjectName = useCallback(async () => {
+    if (!editedName.trim() || !project) {
+      setIsEditingName(false);
+      return;
+    }
+
+    if (editedName.trim() === project.name) {
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      await updateProject(projectId, DEFAULT_USER_ID, {
+        name: editedName.trim(),
+      });
+      // Invalidate and refetch the project data
+      await queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      setIsEditingName(false);
+    } catch (err) {
+      console.error('Error updating project name:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update project name');
+      setIsEditingName(false);
+    }
+  }, [editedName, project, projectId, queryClient]);
+
+  // Cancel editing project name
+  const cancelEditingName = useCallback(() => {
+    setIsEditingName(false);
+    setEditedName('');
+  }, []);
+
+  // Handle keyboard events for name editing
+  const handleNameKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveProjectName();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEditingName();
+      }
+    },
+    [saveProjectName, cancelEditingName],
+  );
+
   return (
     <div className="flex h-full w-full bg-white">
       {/* Left Side - Drawing Canvas */}
       <div className="flex flex-1 flex-col bg-white">
         <div className="border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
           <span className="text-gray-500">Projects/</span>
-          <span className="px-1">{project?.name || 'Loading...'}</span>
+          {isEditingName ? (
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={saveProjectName}
+              onKeyDown={handleNameKeyDown}
+              className="mx-1 border-none bg-transparent px-1 text-gray-900 underline outline-none"
+            />
+          ) : (
+            <span
+              className="cursor-pointer px-1 underline decoration-gray-400 decoration-dotted underline-offset-2 hover:decoration-gray-600"
+              onClick={startEditingName}
+              title="Click to edit project name"
+            >
+              {project?.name || 'Loading...'}
+            </span>
+          )}
         </div>
         <div className="flex-1">
           <Tldraw
