@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { generateImage } from '@/actions/image';
+import { DEFAULT_USER_ID } from '@/actions/projects';
+import { useProject } from '@/hooks/useProject';
 import { Tldraw, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 
@@ -23,6 +25,9 @@ export default function ProjectCanvasPage() {
   const params = useParams();
   const projectId = params.project_id as string;
 
+  // Fetch project data
+  const { data: project } = useProject(projectId, DEFAULT_USER_ID);
+
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -40,8 +45,6 @@ export default function ProjectCanvasPage() {
     width: number;
     height: number;
   } | null>(null);
-  const [projectName, setProjectName] = useState('Untitled');
-  const [isEditingName, setIsEditingName] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -586,29 +589,7 @@ export default function ProjectCanvasPage() {
       <div className="flex flex-1 flex-col bg-white">
         <div className="border-b border-gray-200 bg-white p-3 pl-4 text-left text-sm font-medium text-gray-900">
           <span className="text-gray-500">Projects/</span>
-          {isEditingName ? (
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setIsEditingName(false);
-                }
-              }}
-              autoFocus
-              className="inline-block w-auto min-w-[60px] border-b border-blue-500 bg-transparent px-1 outline-none"
-              style={{ width: `${Math.max(60, projectName.length * 8 + 10)}px` }}
-            />
-          ) : (
-            <span
-              onClick={() => setIsEditingName(true)}
-              className="cursor-pointer rounded px-1 hover:bg-gray-100"
-            >
-              {projectName}
-            </span>
-          )}
+          <span className="px-1">{project?.name || 'Loading...'}</span>
         </div>
         <div className="flex-1">
           <Tldraw
