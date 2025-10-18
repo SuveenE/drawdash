@@ -157,7 +157,9 @@ class ProjectController:
             This endpoint uses Fal AI's FLUX model to generate high-quality 3D-style icons
             and OpenAI to generate a concise topic description. Both are saved to the project.
             """
-            log.info(f"Generating 3D icon and description for project: {request.project_id}")
+            log.info(
+                f"Generating 3D icon and description for project: {request.project_id}"
+            )
             try:
                 # Extract token from authorization header
                 token = authorization.replace("Bearer ", "") if authorization else ""

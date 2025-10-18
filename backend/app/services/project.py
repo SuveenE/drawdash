@@ -244,7 +244,9 @@ class ProjectService:
         Returns:
             IconGenerationResponse containing the generated icon URL, description, and optional image data
         """
-        log.info(f"Generating 3D icon and description for project: {request.project_id}")
+        log.info(
+            f"Generating 3D icon and description for project: {request.project_id}"
+        )
 
         try:
             # Construct the full prompt with style modifiers
@@ -304,7 +306,9 @@ class ProjectService:
                     "Failed to update project: Project not found or unauthorized"
                 )
 
-            log.info(f"Successfully updated project {request.project_id} with icon and description")
+            log.info(
+                f"Successfully updated project {request.project_id} with icon and description"
+            )
 
             return IconGenerationResponse(
                 image_url=image_url,
@@ -321,7 +325,7 @@ class ProjectService:
     ) -> str:
         """
         Generate a concise few-words description about the topic being discussed in the project.
-        
+
         Analyzes the project name, description, and associated content to create a short
         topic description (typically 2-5 words).
 
@@ -356,7 +360,7 @@ class ProjectService:
                 context_parts.append(f"Project Name: {project.name}")
             if project.description:
                 context_parts.append(f"Project Description: {project.description}")
-            
+
             if image_pairs:
                 context_parts.append("\nRecent prompts and descriptions:")
                 for idx, pair in enumerate(image_pairs[:3], 1):
@@ -375,7 +379,7 @@ class ProjectService:
 
             # Use OpenAI to generate a concise topic description
             client = OpenAI()
-            
+
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 max_tokens=50,
@@ -387,22 +391,26 @@ class ProjectService:
 {context}
 
 Respond with ONLY the 3 to 6 words short topic description, nothing else. 
-Your response (3-6 words only):"""
+Your response (3-6 words only):""",
                     }
                 ],
             )
 
             # Extract the topic description from the response
             topic_description = response.choices[0].message.content.strip()
-            
+
             # Remove any quotes if present
             topic_description = topic_description.strip('"').strip("'")
-            
-            log.info(f"Generated topic description for project {project_id}: {topic_description}")
-            
+
+            log.info(
+                f"Generated topic description for project {project_id}: {topic_description}"
+            )
+
             return topic_description
 
         except Exception as e:
-            log.error(f"Error generating topic description for project {project_id}: {e}")
+            log.error(
+                f"Error generating topic description for project {project_id}: {e}"
+            )
             # Return a fallback instead of raising an error
             return "Project Topic"
