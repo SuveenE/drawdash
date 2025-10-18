@@ -11,6 +11,14 @@ import 'tldraw/tldraw.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+// Extend Window interface for Speech Recognition API
+interface WindowWithSpeechRecognition extends Window {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  SpeechRecognition?: new () => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webkitSpeechRecognition?: new () => any;
+}
+
 export default function Home() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,8 +34,9 @@ export default function Home() {
   useEffect(() => {
     // Check if browser supports Speech Recognition
     if (typeof window !== 'undefined') {
+      const windowWithSpeech = window as unknown as WindowWithSpeechRecognition;
       const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
 
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();

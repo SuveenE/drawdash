@@ -3,7 +3,6 @@ import { ThemeProvider } from 'next-themes';
 import { Inter } from 'next/font/google';
 
 import { QueryProvider } from '@/components/providers/query';
-import Header from '@/components/shared/header';
 import { Toaster } from '@/components/ui/sonner';
 
 import './globals.css';

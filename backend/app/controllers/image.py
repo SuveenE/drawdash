@@ -21,10 +21,14 @@ class ImageController:
             "",
             response_model=ImageGenerationResponse,
         )
-        async def generate_image(input: ImageGenerationRequest) -> ImageGenerationResponse:
+        async def generate_image(
+            input: ImageGenerationRequest,
+        ) -> ImageGenerationResponse:
             log.info(f"Generating image with prompt: {input.prompt}")
             try:
-                response: ImageGenerationResponse = await self.service.generate_image(input=input)
+                response: ImageGenerationResponse = await self.service.generate_image(
+                    input=input
+                )
                 log.info("Image generation completed successfully")
                 return response
             except ValueError as e:
@@ -35,5 +39,6 @@ class ImageController:
                 raise HTTPException(status_code=500, detail=str(e))
             except Exception as e:
                 log.error(f"Unexpected error: {e}")
-                raise HTTPException(status_code=500, detail="An unexpected error occurred")
-
+                raise HTTPException(
+                    status_code=500, detail="An unexpected error occurred"
+                )
