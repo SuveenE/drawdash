@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { Mic, MicOff } from 'lucide-react';
-import { Tldraw } from 'tldraw';
+import { Tldraw, createShapeId } from 'tldraw';
 import 'tldraw/tldraw.css';
 
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [frameId, setFrameId] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,29 +97,41 @@ export default function Home() {
       // Export the canvas as base64 image
       let canvasImageData: string | null = null;
 
-      if (editorRef.current) {
+      if (editorRef.current && frameId) {
         const editor = editorRef.current;
-        const shapeIds = editor.getCurrentPageShapeIds();
+        const frame = editor.getShape(frameId);
 
-        if (shapeIds.size > 0) {
-          // Export the canvas to PNG using tldraw's toImage method
-          const { blob } = await editor.toImage(Array.from(shapeIds), {
-            format: 'png',
-            background: false,
+        if (frame) {
+          // Get all shapes that are children of the frame
+          const childShapeIds = editor.getSortedChildIdsForParent(frameId).filter((id: string) => {
+            const shape = editor.getShape(id);
+            return shape && !shape.isLocked;
           });
 
-          // Convert blob to base64
-          await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64data = reader.result as string;
-              // Remove the data:image/png;base64, prefix
-              canvasImageData = base64data.split(',')[1];
-              resolve(null);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          // Include the frame itself and all its children for export
+          const shapeIdsToExport = [frameId, ...childShapeIds];
+
+          if (shapeIdsToExport.length > 0) {
+            // Export only the frame and its contents to PNG
+            const { blob } = await editor.toImage(shapeIdsToExport, {
+              format: 'png',
+              background: true,
+              padding: 0,
+            });
+
+            // Convert blob to base64
+            await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64data = reader.result as string;
+                // Remove the data:image/png;base64, prefix
+                canvasImageData = base64data.split(',')[1];
+                resolve(null);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
         }
       }
 
@@ -163,6 +176,49 @@ export default function Home() {
           <Tldraw
             onMount={(editor) => {
               editorRef.current = editor;
+
+              // Check if a frame already exists (to prevent duplicates in React Strict Mode)
+              const existingShapes = Array.from(editor.getCurrentPageShapeIds());
+              const existingFrame = existingShapes.find((id) => {
+                const shape = editor.getShape(id);
+                return (
+                  shape?.type === 'frame' &&
+                  (shape.props as { name?: string })?.name === 'Drawing Area'
+                );
+              });
+
+              if (existingFrame) {
+                setFrameId(existingFrame);
+                editor.zoomToFit();
+                return;
+              }
+
+              // Create a centered frame for drawing
+              const { width, height } = editor.getViewportPageBounds();
+              const frameWidth = Math.min(800, width * 0.6);
+              const frameHeight = Math.min(600, height * 0.6);
+              const x = (width - frameWidth) / 2;
+              const y = (height - frameHeight) / 2;
+
+              const frameShapeId = createShapeId();
+              editor.createShapes([
+                {
+                  id: frameShapeId,
+                  type: 'frame',
+                  x,
+                  y,
+                  props: {
+                    w: frameWidth,
+                    h: frameHeight,
+                    name: 'Drawing Area',
+                  },
+                },
+              ]);
+
+              setFrameId(frameShapeId);
+
+              // Zoom to fit the frame
+              editor.zoomToFit();
             }}
           />
         </div>
