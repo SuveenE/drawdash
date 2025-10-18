@@ -98,7 +98,7 @@ export function CreateProjectDialog({
               onChange={(e) => setProjectName(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="text-black"
+              className="border-0 text-black focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
           <DialogFooter>
