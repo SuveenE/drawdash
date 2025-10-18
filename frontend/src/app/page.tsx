@@ -45,6 +45,7 @@ export default function Home() {
   const recognitionRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
+  const autoGenerateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if browser supports Speech Recognition
@@ -91,6 +92,39 @@ export default function Home() {
       }
     };
   }, []);
+
+  // Auto-generate in Agent Mode after 20 seconds of listening
+  useEffect(() => {
+    // Clear any existing timer
+    if (autoGenerateTimerRef.current) {
+      clearTimeout(autoGenerateTimerRef.current);
+      autoGenerateTimerRef.current = null;
+    }
+
+    // Only set timer if listening has started
+    if (isListening && editorRef.current && frameId) {
+      // Check if canvas is empty (Agent Mode)
+      const editor = editorRef.current;
+      const childShapeIds = editor.getSortedChildIdsForParent(frameId);
+      const isCanvasEmpty = childShapeIds.length === 0;
+
+      if (isCanvasEmpty) {
+        console.log('Agent Mode detected: Auto-generate will trigger in 20 seconds');
+        autoGenerateTimerRef.current = setTimeout(() => {
+          console.log('Auto-generating image after 20 seconds in Agent Mode');
+          handleGenerate();
+        }, 20000); // 20 seconds
+      }
+    }
+
+    // Cleanup on unmount or when listening stops
+    return () => {
+      if (autoGenerateTimerRef.current) {
+        clearTimeout(autoGenerateTimerRef.current);
+        autoGenerateTimerRef.current = null;
+      }
+    };
+  }, [isListening, frameId]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
