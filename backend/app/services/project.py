@@ -5,13 +5,9 @@ from uuid import uuid4
 import fal_client
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (
-    IconGenerationRequest,
-    IconGenerationResponse,
-    Project,
-    ProjectCreateRequest,
-    ProjectUpdateRequest,
-)
+from app.models.project import (IconGenerationRequest, IconGenerationResponse,
+                                Project, ProjectCreateRequest,
+                                ProjectUpdateRequest)
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +76,9 @@ class ProjectService:
 
             count = response.count if response.count is not None else 0
             is_first = count == 0
-            log.info(f"Project {project_id} has {count} image pairs. Is first: {is_first}")
+            log.info(
+                f"Project {project_id} has {count} image pairs. Is first: {is_first}"
+            )
 
             return is_first
 

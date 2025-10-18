@@ -145,11 +145,11 @@ async def download_and_upload_image_from_url(
 
         # Open the image to get its properties
         image = Image.open(BytesIO(image_bytes))
-        
+
         # Get image properties
         mime_type = f"image/{image.format.lower()}" if image.format else "image/png"
         file_extension = image.format.lower() if image.format else "png"
-        
+
         # Generate unique filename
         filename = f"{folder}/{uuid.uuid4()}.{file_extension}"
 

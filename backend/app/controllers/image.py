@@ -7,11 +7,8 @@ from app.models.project import IconGenerationRequest, ProjectUpdateRequest
 from app.services.image import ImageService
 from app.services.project import ProjectService
 from app.utils.database import db_client
-from app.utils.storage import (
-    download_and_upload_image_from_url,
-    save_image_pair_to_db,
-    upload_image_to_storage,
-)
+from app.utils.storage import (download_and_upload_image_from_url,
+                               save_image_pair_to_db, upload_image_to_storage)
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +50,7 @@ async def generate_and_save_project_icon(
         # Generate the 3D icon
         icon_request = IconGenerationRequest(
             prompt=icon_prompt,
-            style="3D render, isometric, clean background, modern, professional graphic"
+            style="3D render, isometric, clean background, modern, professional graphic",
         )
         icon_response = await project_service.generate_3d_icon(icon_request)
 
