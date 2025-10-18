@@ -3,9 +3,9 @@ import logging
 from fastapi import APIRouter
 
 from app.controllers.image import ImageController
-from app.controllers.messages import MessagesController
+from app.controllers.project import ProjectController
 from app.services.image import ImageService
-from app.services.messages import MessagesService
+from app.services.project import ProjectService
 
 log = logging.getLogger(__name__)
 
@@ -20,18 +20,18 @@ async def status():
     return {"status": "ok"}
 
 
-### Messages
+### Projects
 
 
-def get_messages_controller_router():
-    service = MessagesService()
-    return MessagesController(service=service).router
+def get_project_controller_router():
+    service = ProjectService()
+    return ProjectController(service=service).router
 
 
 router.include_router(
-    get_messages_controller_router(),
-    tags=["messages"],
-    prefix="/api/messages",
+    get_project_controller_router(),
+    tags=["projects"],
+    prefix="/api/projects",
 )
 
 
