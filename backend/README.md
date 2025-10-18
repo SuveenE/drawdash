@@ -24,6 +24,14 @@ eval "$(poetry env activate)"
 cp .env.example .env
 ```
 
+Make sure to add your Fal AI API key to the `.env` file:
+
+```bash
+FAL_KEY=your_fal_ai_api_key_here
+```
+
+You can obtain a Fal AI API key from [fal.ai](https://fal.ai/)
+
 ## Quick Start
 
 To spin up the server, run the following command at the `server` directory:
@@ -32,6 +40,32 @@ To spin up the server, run the following command at the `server` directory:
 # For local development, and if hosting service allows us to manually create the .env file
 poetry run uvicorn app.api.main:app --reload --host 0.0.0.0 --port 8080 --env-file .env
 ```
+
+## API Endpoints
+
+### 3D Icon Generation
+
+Generate a 3D icon using Fal AI based on a text prompt:
+
+**POST** `/projects/generate-icon`
+
+**Request Body:**
+```json
+{
+  "prompt": "A modern cloud computing icon",
+  "style": "3D render, isometric, clean background"
+}
+```
+
+**Response:**
+```json
+{
+  "image_url": "https://...",
+  "image_data": null
+}
+```
+
+This endpoint uses Fal AI's FLUX Pro model to generate high-quality 3D-style icons. The default style is "3D render, isometric, clean background", but you can customize it by providing your own style string.
 
 ## Debugging Tips
 

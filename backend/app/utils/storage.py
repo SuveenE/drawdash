@@ -4,6 +4,7 @@ import uuid
 from io import BytesIO
 from typing import Tuple
 
+import httpx
 from PIL import Image
 from supabase._async.client import AsyncClient as Client
 
@@ -42,7 +43,7 @@ async def upload_image_to_storage(
         filename = f"{folder}/{uuid.uuid4()}.{file_extension}"
 
         # Upload to Supabase storage
-        response = await supabase_client.storage.from_(bucket_name).upload(
+        await supabase_client.storage.from_(bucket_name).upload(
             path=filename,
             file=image_bytes,
             file_options={"content-type": mime_type},
@@ -115,3 +116,58 @@ async def save_image_pair_to_db(
     except Exception as e:
         log.error(f"Error saving image pair to database: {e}")
         raise RuntimeError(f"Failed to save image pair: {e}")
+
+
+async def download_and_upload_image_from_url(
+    supabase_client: Client,
+    image_url: str,
+    bucket_name: str = "whisprdraw",
+    folder: str = "project_icons",
+) -> str:
+    """
+    Download an image from a URL and upload it to Supabase storage.
+
+    Args:
+        supabase_client: The Supabase client instance
+        image_url: The URL of the image to download
+        bucket_name: The name of the storage bucket
+        folder: The folder path within the bucket
+
+    Returns:
+        The public URL of the uploaded image
+    """
+    try:
+        # Download the image from the URL
+        async with httpx.AsyncClient() as client:
+            response = await client.get(image_url)
+            response.raise_for_status()
+            image_bytes = response.content
+
+        # Open the image to get its properties
+        image = Image.open(BytesIO(image_bytes))
+
+        # Get image properties
+        mime_type = f"image/{image.format.lower()}" if image.format else "image/png"
+        file_extension = image.format.lower() if image.format else "png"
+
+        # Generate unique filename
+        filename = f"{folder}/{uuid.uuid4()}.{file_extension}"
+
+        # Upload to Supabase storage
+        await supabase_client.storage.from_(bucket_name).upload(
+            path=filename,
+            file=image_bytes,
+            file_options={"content-type": mime_type},
+        )
+
+        # Get public URL
+        public_url_response = await supabase_client.storage.from_(
+            bucket_name
+        ).get_public_url(filename)
+
+        log.info(f"Successfully uploaded image from URL to {public_url_response}")
+        return public_url_response
+
+    except Exception as e:
+        log.error(f"Error downloading and uploading image from URL: {e}")
+        raise RuntimeError(f"Failed to download and upload image: {e}")

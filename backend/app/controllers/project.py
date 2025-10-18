@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter, Header, HTTPException
 
 from app.models.project import (
+    IconGenerationRequest,
+    IconGenerationResponse,
     Project,
     ProjectCreateRequest,
     ProjectListResponse,
@@ -133,6 +135,37 @@ class ProjectController:
                 # Check if it's an authorization error
                 if "unauthorized" in str(e).lower() or "not found" in str(e).lower():
                     raise HTTPException(status_code=404, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e))
+            except Exception as e:
+                log.error(f"Unexpected error: {e}")
+                raise HTTPException(
+                    status_code=500, detail="An unexpected error occurred"
+                )
+
+        @router.post(
+            "/generate-icon",
+            response_model=IconGenerationResponse,
+            status_code=200,
+        )
+        async def generate_3d_icon(
+            request: IconGenerationRequest,
+        ) -> IconGenerationResponse:
+            """
+            Generate a 3D icon using Fal AI based on a text prompt.
+
+            This endpoint uses Fal AI's FLUX model to generate high-quality 3D-style icons.
+            The icon will be generated with an isometric, clean 3D render style.
+            """
+            log.info(f"Generating 3D icon with prompt: {request.prompt}")
+            try:
+                # Generate the icon using the service
+                icon_response = await self.service.generate_3d_icon(request=request)
+
+                log.info(f"Successfully generated 3D icon: {icon_response.image_url}")
+                return icon_response
+
+            except RuntimeError as e:
+                log.error(f"Service error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
             except Exception as e:
                 log.error(f"Unexpected error: {e}")

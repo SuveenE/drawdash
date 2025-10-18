@@ -384,6 +384,7 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
               onChange={(e) => setProjectName(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
+              className="text-black"
             />
           </div>
           <DialogFooter>

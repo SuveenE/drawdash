@@ -33,8 +33,9 @@ export default function ProjectCanvasPage() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [agentTranscript, setAgentTranscript] = useState(''); // Transcript for Agent Mode
-  const [askTranscript, setAskTranscript] = useState(''); // Transcript for Ask Mode
+  const [mode, setMode] = useState<'agent' | 'ask'>('agent'); // Explicit mode tracking
+  const [agentTranscript, setAgentTranscript] = useState(''); // Voice transcript for Agent Mode
+  const [askPrompt, setAskPrompt] = useState(''); // Text input for Ask Mode
   const [error, setError] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
   const [imageUsed, setImageUsed] = useState(false);
@@ -52,8 +53,9 @@ export default function ProjectCanvasPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const autoGenerateTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const transcriptRef = useRef<string>('');
+  const agentTranscriptRef = useRef<string>('');
   const handleGenerateRef = useRef<(() => Promise<void>) | null>(null);
+  const isListeningRef = useRef<boolean>(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -61,21 +63,16 @@ export default function ProjectCanvasPage() {
   const saveDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedSnapshotRef = useRef(false);
 
-  // Helper to determine current mode (Agent Mode = empty canvas, Ask Mode = has content)
-  const isAgentMode = useCallback((): boolean => {
-    if (!editorRef.current || !frameId) return true; // Default to Agent Mode if not ready
-    const editor = editorRef.current;
-    const childShapeIds = editor.getSortedChildIdsForParent(frameId);
-    return childShapeIds.length === 0;
-  }, [frameId]);
-
-  // Get the appropriate transcript based on current mode
-  const currentTranscript = isAgentMode() ? agentTranscript : askTranscript;
-
-  // Keep transcript ref in sync with current transcript
+  // Keep agent transcript ref in sync with agent transcript state
   useEffect(() => {
-    transcriptRef.current = currentTranscript;
-  }, [currentTranscript]);
+    console.log('[TRANSCRIPT-REF] Updating agentTranscriptRef to:', agentTranscript);
+    agentTranscriptRef.current = agentTranscript;
+  }, [agentTranscript]);
+
+  // Keep isListening ref in sync with isListening state
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
   useEffect(() => {
     // Check if browser supports Speech Recognition
@@ -101,11 +98,14 @@ export default function ProjectCanvasPage() {
             }
           }
 
-          // Update the appropriate transcript based on current mode
-          if (isAgentMode()) {
-            setAgentTranscript((prev) => prev + finalTranscript);
-          } else {
-            setAskTranscript((prev) => prev + finalTranscript);
+          if (finalTranscript) {
+            console.log('[SPEECH] Final transcript received:', finalTranscript);
+            // Voice input is only for Agent Mode
+            setAgentTranscript((prev) => {
+              const newTranscript = prev + finalTranscript;
+              console.log('[SPEECH] Updated agentTranscript:', newTranscript);
+              return newTranscript;
+            });
           }
         };
 
@@ -116,7 +116,23 @@ export default function ProjectCanvasPage() {
         };
 
         recognitionRef.current.onend = () => {
-          setIsListening(false);
+          console.log('[SPEECH] Recognition ended - checking if should restart...');
+          console.log('[SPEECH] isListeningRef.current:', isListeningRef.current);
+
+          // If we're still supposed to be listening (user didn't manually stop),
+          // restart the recognition to keep it going
+          if (isListeningRef.current) {
+            console.log('[SPEECH] Auto-restarting recognition to continue listening');
+            try {
+              recognitionRef.current?.start();
+            } catch (err) {
+              console.error('[SPEECH] Failed to restart recognition:', err);
+              setIsListening(false);
+            }
+          } else {
+            console.log('[SPEECH] User stopped listening, not restarting');
+            setIsListening(false);
+          }
         };
       }
     }
@@ -126,49 +142,48 @@ export default function ProjectCanvasPage() {
         recognitionRef.current.stop();
       }
     };
-  }, [isAgentMode]);
+  }, []);
 
   // Auto-generate in Agent Mode after 20 seconds of listening
   useEffect(() => {
-    // Clear any existing timer
-    if (autoGenerateTimerRef.current) {
-      clearTimeout(autoGenerateTimerRef.current);
-      autoGenerateTimerRef.current = null;
-    }
+    // Only set timer if in Agent Mode and listening has started
+    if (mode === 'agent' && isListening && editorRef.current && frameId) {
+      console.log('[AUTO-GEN] Agent Mode listening started: Setting 20-second timer');
+      autoGenerateTimerRef.current = setTimeout(() => {
+        // In Agent Mode, use the agent transcript ref
+        const agentTranscript = agentTranscriptRef.current.trim();
+        console.log('[AUTO-GEN] Timer fired! Agent transcript:', agentTranscript);
+        console.log('[AUTO-GEN] handleGenerateRef exists?', !!handleGenerateRef.current);
 
-    // Only set timer if listening has started
-    if (isListening && editorRef.current && frameId) {
-      // Check if canvas is empty (Agent Mode)
-      const editor = editorRef.current;
-      const childShapeIds = editor.getSortedChildIdsForParent(frameId);
-      const isCanvasEmpty = childShapeIds.length === 0;
-
-      if (isCanvasEmpty) {
-        console.log('Agent Mode detected: Auto-generate will trigger in 20 seconds');
-        autoGenerateTimerRef.current = setTimeout(() => {
-          // Only auto-generate if we have a transcript (use ref to get latest value)
-          const currentTranscript = transcriptRef.current.trim();
-          if (currentTranscript && handleGenerateRef.current) {
-            console.log(
-              'Auto-generating image after 20 seconds in Agent Mode with transcript:',
-              currentTranscript,
-            );
-            handleGenerateRef.current();
-          } else {
-            console.log('No transcript available yet, skipping auto-generate');
-          }
-        }, 20000); // 20 seconds
-      }
+        if (agentTranscript && handleGenerateRef.current) {
+          console.log('[AUTO-GEN] Triggering auto-generate with transcript:', agentTranscript);
+          handleGenerateRef.current();
+        } else {
+          console.log('[AUTO-GEN] Skipping - no transcript or handler');
+        }
+      }, 20000); // 20 seconds
+    } else {
+      console.log(
+        '[AUTO-GEN] Not setting timer. mode:',
+        mode,
+        'isListening:',
+        isListening,
+        'frameId:',
+        !!frameId,
+        'editor:',
+        !!editorRef.current,
+      );
     }
 
     // Cleanup on unmount or when listening stops
     return () => {
       if (autoGenerateTimerRef.current) {
+        console.log('[AUTO-GEN] Clearing timer due to cleanup');
         clearTimeout(autoGenerateTimerRef.current);
         autoGenerateTimerRef.current = null;
       }
     };
-  }, [isListening, frameId, isAgentMode]);
+  }, [mode, isListening, frameId]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
@@ -177,15 +192,14 @@ export default function ProjectCanvasPage() {
     }
 
     if (isListening) {
+      console.log('[TOGGLE] Stopping listening');
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
-      // Clear the appropriate transcript based on current mode
-      if (isAgentMode()) {
-        setAgentTranscript('');
-      } else {
-        setAskTranscript('');
-      }
+      console.log('[TOGGLE] Starting listening in Agent Mode');
+      // Clear agent transcript when starting new listening session
+      setAgentTranscript('');
+      console.log('[TOGGLE] Cleared agentTranscript');
       recognitionRef.current.start();
       setIsListening(true);
     }
@@ -510,12 +524,32 @@ export default function ProjectCanvasPage() {
   }, [imageUsed, generatedImage, showSlider, handleAcceptImage, handleRejectImage]);
 
   const exportCanvasImage = useCallback(async (): Promise<string | null> => {
-    if (!editorRef.current || !frameId) return null;
+    console.log('exportCanvasImage: Starting export...');
+    console.log('exportCanvasImage: editorRef.current:', !!editorRef.current);
+    console.log('exportCanvasImage: frameId:', frameId);
+
+    if (!editorRef.current || !frameId) {
+      console.log('exportCanvasImage: No editor or frameId, returning null');
+      return null;
+    }
 
     const editor = editorRef.current;
-    const frame = editor.getShape(frameId);
 
-    if (!frame) return null;
+    // Debug: Check all shapes on the current page
+    const allShapeIds = Array.from(editor.getCurrentPageShapeIds());
+    console.log('exportCanvasImage: All shape IDs on page:', allShapeIds);
+    console.log('exportCanvasImage: Looking for frameId:', frameId);
+
+    const frame = editor.getShape(frameId);
+    console.log('exportCanvasImage: frame object:', frame);
+
+    if (!frame) {
+      console.log('exportCanvasImage: No frame found, returning null');
+      console.log('exportCanvasImage: This might be a timing issue or frameId mismatch');
+      return null;
+    }
+
+    console.log('exportCanvasImage: Frame found successfully, type:', frame.type);
 
     // Get all shapes that are children of the frame
     const childShapeIds = editor.getSortedChildIdsForParent(frameId).filter((id: string) => {
@@ -523,17 +557,22 @@ export default function ProjectCanvasPage() {
       return shape && !shape.isLocked;
     });
 
+    console.log('exportCanvasImage: childShapeIds count:', childShapeIds.length);
+
     // Include the frame itself and all its children for export
     const shapeIdsToExport = [frameId, ...childShapeIds];
 
-    if (shapeIdsToExport.length === 0) return null;
+    console.log('exportCanvasImage: shapeIdsToExport count:', shapeIdsToExport.length);
 
     // Export only the frame and its contents to PNG
+    // Note: shapeIdsToExport will always have at least the frame itself
     const { blob } = await editor.toImage(shapeIdsToExport, {
       format: 'png',
       background: true,
       padding: 0,
     });
+
+    console.log('exportCanvasImage: Blob created, size:', blob.size);
 
     // Convert blob to base64
     return new Promise((resolve, reject) => {
@@ -541,18 +580,24 @@ export default function ProjectCanvasPage() {
       reader.onloadend = () => {
         const base64data = reader.result as string;
         // Remove the data:image/png;base64, prefix
-        resolve(base64data.split(',')[1]);
+        const base64 = base64data.split(',')[1];
+        console.log('exportCanvasImage: Base64 created, length:', base64?.length || 0);
+        resolve(base64);
       };
-      reader.onerror = reject;
+      reader.onerror = (error) => {
+        console.error('exportCanvasImage: FileReader error:', error);
+        reject(error);
+      };
       reader.readAsDataURL(blob);
     });
   }, [frameId]);
 
   const handleGenerate = useCallback(async () => {
-    const activeTranscript = isAgentMode() ? agentTranscript : askTranscript;
+    // Get the appropriate prompt based on mode
+    const prompt = mode === 'agent' ? agentTranscript : askPrompt;
 
-    if (!activeTranscript.trim()) {
-      setError('Please provide a voice prompt first');
+    if (!prompt.trim()) {
+      setError(mode === 'agent' ? 'Please provide a voice prompt first' : 'Please enter a prompt');
       return;
     }
 
@@ -560,13 +605,22 @@ export default function ProjectCanvasPage() {
     setError(null);
 
     try {
+      // Always export canvas image - needed for both generate and edit modes
+      console.log('Exporting canvas image...');
       const canvasImageData = await exportCanvasImage();
+      console.log(
+        'Canvas image data:',
+        canvasImageData ? `${canvasImageData.length} chars` : 'null',
+      );
 
-      // Determine type: "generate" for agent mode (no canvas content), "edit" for ask mode (has canvas content)
-      const requestType = canvasImageData ? 'edit' : 'generate';
+      // Check if canvas has content to determine request type
+      const editor = editorRef.current;
+      const hasContent = frameId && editor?.getSortedChildIdsForParent(frameId).length > 0;
+      const requestType = hasContent ? 'edit' : 'generate';
+      console.log('Request type:', requestType, '(mode:', mode, ', hasContent:', hasContent, ')');
 
       const data = await generateImage({
-        prompt: activeTranscript,
+        prompt: prompt,
         image_data: canvasImageData,
         project_id: projectId,
         type: requestType,
@@ -584,7 +638,7 @@ export default function ProjectCanvasPage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [agentTranscript, askTranscript, exportCanvasImage, projectId, isAgentMode]);
+  }, [mode, agentTranscript, askPrompt, exportCanvasImage, projectId, frameId]);
 
   // Keep handleGenerate ref in sync
   useEffect(() => {
@@ -690,6 +744,22 @@ export default function ProjectCanvasPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         loadSnapshot(editor.store, { document: project.snapshot as any });
       });
+
+      // After loading snapshot, find the frame and update frameId state
+      // The snapshot may have a different frame ID than the initial one
+      const existingShapes = Array.from(editor.getCurrentPageShapeIds());
+      const existingFrame = existingShapes.find((id) => {
+        const shape = editor.getShape(id);
+        return (
+          shape?.type === 'frame' && (shape.props as { name?: string })?.name === 'Drawing Area'
+        );
+      });
+
+      if (existingFrame && existingFrame !== frameId) {
+        console.log('Updating frameId after snapshot load:', existingFrame);
+        setFrameId(existingFrame as string);
+      }
+
       hasLoadedSnapshotRef.current = true;
       console.log('Canvas loaded from database');
     } catch (err) {
@@ -818,18 +888,28 @@ export default function ProjectCanvasPage() {
 
       {/* Right Sidebar - Generated Image & Controls */}
       <ImageSidebar
+        projectId={projectId}
         generatedImage={generatedImage}
         imageUsed={imageUsed}
-        transcript={currentTranscript}
+        transcript={mode === 'agent' ? agentTranscript : askPrompt}
         isListening={isListening}
         isGenerating={isGenerating}
         error={error}
+        mode={mode}
+        onModeChange={(newMode) => {
+          setMode(newMode);
+          // Stop listening when switching modes
+          if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+          }
+        }}
         onTranscriptChange={(value) => {
-          // Update the appropriate transcript based on current mode
-          if (isAgentMode()) {
+          // Update the appropriate state based on current mode
+          if (mode === 'agent') {
             setAgentTranscript(value);
           } else {
-            setAskTranscript(value);
+            setAskPrompt(value);
           }
         }}
         onToggleListening={toggleListening}

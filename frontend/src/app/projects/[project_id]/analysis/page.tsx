@@ -30,13 +30,41 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="flex h-full flex-col p-8">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Link
+          href={`/projects/${projectId}`}
+          className="inline-flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="h-4 w-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+            />
+          </svg>
+          Back to Project
+        </Link>
+      </div>
+
       {/* Breadcrumb */}
       <nav className="mb-4 text-sm">
         <Link href="/projects" className="text-blue-600 hover:underline">
           Projects
         </Link>
         <span className="mx-2 text-gray-400">/</span>
-        <span className="text-gray-600">{project?.name || projectId}</span>
+        <Link href={`/projects/${projectId}`} className="text-blue-600 hover:underline">
+          {project?.name || projectId}
+        </Link>
+        <span className="mx-2 text-gray-400">/</span>
+        <span className="text-gray-600">Analysis</span>
       </nav>
 
       {/* Project Header */}
@@ -45,7 +73,6 @@ export default function ProjectDetailPage() {
           <h1 className="mb-2 text-3xl font-bold text-gray-900">{project.name}</h1>
           {project.description && <p className="text-gray-600">{project.description}</p>}
           <div className="mt-2 text-sm text-gray-500">
-            <p>Created: {new Date(project.created_at).toLocaleDateString()}</p>
             <p>Last Updated: {new Date(project.updated_at).toLocaleDateString()}</p>
           </div>
         </div>
@@ -57,17 +84,17 @@ export default function ProjectDetailPage() {
       {/* Error State */}
       {error && <p className="text-red-600">Error: {error.message}</p>}
 
-      {/* Image Pairs Section */}
+      {/* Generations Section */}
       {imagePairsData && (
         <div>
           <h2 className="mb-4 text-xl font-semibold text-gray-800">
-            Image Pairs ({imagePairsData.image_pairs.length})
+            Generations ({imagePairsData.image_pairs.length})
           </h2>
 
           {imagePairsData.image_pairs.length === 0 ? (
-            <p className="text-gray-600">No image pairs found for this project.</p>
+            <p className="text-gray-600">No generations found for this project.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {imagePairsData.image_pairs.map((imagePair) => (
                 <ImagePairCard key={imagePair.id} imagePair={imagePair} />
               ))}
