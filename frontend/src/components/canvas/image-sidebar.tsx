@@ -215,10 +215,8 @@ export function ImageSidebar({
                   </div>
                 )}
               </div>
-              <div className="max-h-[200px] min-h-[80px] w-full overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-                {transcript || (
-                  <span className="text-gray-400">Click the microphone icon above to begin...</span>
-                )}
+              <div className="max-h-[350px] min-h-[150px] w-full overflow-y-auto rounded-md bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700">
+                {transcript}
               </div>
             </div>
 
