@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Mic, MicOff } from 'lucide-react';
 import { Tldraw, createShapeId } from 'tldraw';
@@ -26,6 +26,7 @@ export default function Home() {
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [frameId, setFrameId] = useState<string | null>(null);
+  const [imageUsed, setImageUsed] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,6 +92,7 @@ export default function Home() {
           // Remove the data:image/png;base64, prefix
           const base64Image = base64data.split(',')[1];
           setGeneratedImage(base64Image);
+          setImageUsed(false); // Show button when test image loads
         };
         reader.readAsDataURL(blob);
       } catch (err) {
@@ -117,7 +119,7 @@ export default function Home() {
     }
   };
 
-  const handleUseImage = async () => {
+  const handleAcceptImage = useCallback(async () => {
     if (!editorRef.current || !frameId) {
       setError('Canvas not ready');
       return;
@@ -154,6 +156,7 @@ export default function Home() {
       const { width: imageWidth, height: imageHeight } = await imageLoadPromise;
 
       // Create asset ID with the required "asset:" prefix
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const assetId = `asset:${createShapeId()}` as any;
 
       // Create the asset
@@ -206,12 +209,37 @@ export default function Home() {
         },
       ]);
 
+      setImageUsed(true);
       console.log('Image placed in frame');
     } catch (err) {
       console.error('Error placing image:', err);
       setError(err instanceof Error ? err.message : 'Failed to place image');
     }
-  };
+  }, [frameId]);
+
+  const handleRejectImage = useCallback(() => {
+    setImageUsed(true);
+    console.log('Image rejected');
+  }, []);
+
+  // Keyboard shortcuts for Accept/Reject
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if buttons are visible
+      if (imageUsed || !generatedImage) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        handleAcceptImage();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleRejectImage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [imageUsed, generatedImage, handleAcceptImage, handleRejectImage]);
 
   const handleGenerate = async () => {
     if (!transcript.trim()) {
@@ -284,6 +312,7 @@ export default function Home() {
 
       const data = await response.json();
       setGeneratedImage(data.image_data);
+      setImageUsed(false); // Reset when new image is generated
 
       if (data.text_response) {
         console.log('Model response:', data.text_response);
@@ -375,14 +404,26 @@ export default function Home() {
               <span className="text-sm text-gray-500">No image generated yet</span>
             )}
           </div>
-          <Button
-            onClick={handleUseImage}
-            variant="outline"
-            className="w-full"
-            disabled={!frameId || !editorRef.current}
-          >
-            Use Image
-          </Button>
+          {!imageUsed && (
+            <div className="flex gap-3">
+              <Button
+                onClick={handleAcceptImage}
+                variant="outline"
+                className="flex-1 border-2 border-green-600 bg-green-50 text-green-700 shadow-sm hover:bg-green-100 hover:text-green-800"
+                disabled={!frameId || !editorRef.current}
+              >
+                Accept (Tab)
+              </Button>
+              <Button
+                onClick={handleRejectImage}
+                variant="outline"
+                className="flex-1 border-2 border-red-600 bg-red-50 text-red-700 shadow-sm hover:bg-red-100 hover:text-red-800"
+                disabled={!frameId || !editorRef.current}
+              >
+                Reject (Esc)
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Divider */}
