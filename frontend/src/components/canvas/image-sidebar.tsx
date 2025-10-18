@@ -132,7 +132,7 @@ export function ImageSidebar({
               <Button
                 onClick={onAcceptImage}
                 variant="outline"
-                className="flex-1 border border-green-600 bg-green-50 text-green-600 shadow-sm hover:bg-green-100 hover:text-green-700"
+                className="flex-1 !border-green-600 !bg-green-50 text-green-600 shadow-sm hover:!bg-green-100 hover:text-green-700"
                 disabled={!canvasReady}
               >
                 Accept (Tab)
@@ -140,7 +140,7 @@ export function ImageSidebar({
               <Button
                 onClick={onRejectImage}
                 variant="outline"
-                className="flex-1 border border-red-600 bg-red-50 text-red-600 shadow-sm hover:bg-red-100 hover:text-red-700"
+                className="flex-1 !border-red-600 !bg-red-50 text-red-600 shadow-sm hover:!bg-red-100 hover:text-red-700"
                 disabled={!canvasReady}
               >
                 Reject (Esc)
@@ -200,44 +200,39 @@ export function ImageSidebar({
             </div>
 
             {/* Live Transcript Display */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-sm font-medium text-gray-900">
-                <span>Live Transcript</span>
-                {isListening && !isGenerating && (
-                  <div className="animate-blink flex items-center gap-1 text-blue-600">
-                    <Binoculars className="h-3.5 w-3.5" />
-                    <span className="text-xs">observing</span>
-                  </div>
-                )}
-                {isGenerating && isThinking && (
-                  <div className="animate-blink flex items-center gap-1 text-blue-600">
-                    <Brain className="h-3.5 w-3.5" />
-                    <span className="text-xs">thinking</span>
-                  </div>
-                )}
-                {isGenerating && !isThinking && (
-                  <div className="animate-blink flex items-center gap-1 text-blue-600">
-                    <Paintbrush className="h-3.5 w-3.5" />
-                    <span className="text-xs">sketching</span>
-                  </div>
-                )}
+            {isListening && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-sm font-medium text-gray-900">
+                  <span>Live Transcript</span>
+                  {isListening && !isGenerating && (
+                    <div className="animate-blink flex items-center gap-1 text-blue-600">
+                      <Binoculars className="h-3.5 w-3.5" />
+                      <span className="text-xs">observing</span>
+                    </div>
+                  )}
+                  {isGenerating && isThinking && (
+                    <div className="animate-blink flex items-center gap-1 text-blue-600">
+                      <Brain className="h-3.5 w-3.5" />
+                      <span className="text-xs">thinking</span>
+                    </div>
+                  )}
+                  {isGenerating && !isThinking && (
+                    <div className="animate-blink flex items-center gap-1 text-blue-600">
+                      <Paintbrush className="h-3.5 w-3.5" />
+                      <span className="text-xs">sketching</span>
+                    </div>
+                  )}
+                </div>
+                <div className="max-h-[350px] min-h-[150px] w-full overflow-y-auto rounded-md bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700">
+                  {transcript}
+                </div>
               </div>
-              <div className="max-h-[350px] min-h-[150px] w-full overflow-y-auto rounded-md bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700">
-                {transcript}
-              </div>
-            </div>
+            )}
 
             {/* Error Display */}
             {error && (
               <div className="rounded-md border border-red-500 bg-red-50 p-3 text-sm text-red-900">
                 {error}
-              </div>
-            )}
-
-            {/* Status Indicator */}
-            {isGenerating && (
-              <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900">
-                Processing and updating diagram...
               </div>
             )}
           </TabsContent>
