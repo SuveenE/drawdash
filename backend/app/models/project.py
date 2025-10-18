@@ -48,12 +48,10 @@ class ProjectUpdateRequest(BaseModel):
 
 
 class IconGenerationRequest(BaseModel):
-    prompt: str = Field(
-        description="Text prompt describing the 3D icon to generate."
-    )
+    prompt: str = Field(description="Text prompt describing the 3D icon to generate.")
     style: Optional[str] = Field(
         default="3D render, isometric, clean background",
-        description="Style modifier for the icon generation."
+        description="Style modifier for the icon generation.",
     )
 
 

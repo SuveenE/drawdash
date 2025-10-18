@@ -2,14 +2,9 @@ import logging
 
 from fastapi import APIRouter, Header, HTTPException
 
-from app.models.project import (
-    IconGenerationRequest,
-    IconGenerationResponse,
-    Project,
-    ProjectCreateRequest,
-    ProjectListResponse,
-    ProjectUpdateRequest,
-)
+from app.models.project import (IconGenerationRequest, IconGenerationResponse,
+                                Project, ProjectCreateRequest,
+                                ProjectListResponse, ProjectUpdateRequest)
 from app.services.project import ProjectService
 from app.utils.database import db_client
 
@@ -152,7 +147,7 @@ class ProjectController:
         ) -> IconGenerationResponse:
             """
             Generate a 3D icon using Fal AI based on a text prompt.
-            
+
             This endpoint uses Fal AI's FLUX model to generate high-quality 3D-style icons.
             The icon will be generated with an isometric, clean 3D render style.
             """

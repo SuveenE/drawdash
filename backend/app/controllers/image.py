@@ -97,7 +97,7 @@ class ImageController:
             log.info(f"Input image data present: {bool(input.image_data)}")
             if input.image_data:
                 log.info(f"Input image data length: {len(input.image_data)}")
-            
+
             try:
                 response: ImageGenerationResponse = await self.service.generate_image(
                     input=input

@@ -5,13 +5,9 @@ from uuid import uuid4
 import fal_client
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (
-    IconGenerationRequest,
-    IconGenerationResponse,
-    Project,
-    ProjectCreateRequest,
-    ProjectUpdateRequest,
-)
+from app.models.project import (IconGenerationRequest, IconGenerationResponse,
+                                Project, ProjectCreateRequest,
+                                ProjectUpdateRequest)
 
 log = logging.getLogger(__name__)
 
