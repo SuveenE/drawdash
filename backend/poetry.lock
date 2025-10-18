@@ -460,6 +460,27 @@ files = [
 packaging = "*"
 
 [[package]]
+name = "fal-client"
+version = "0.8.1"
+description = "Python client for fal.ai"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "fal_client-0.8.1-py3-none-any.whl", hash = "sha256:ab37063f2b35ca6fad06f75fe45b05b72c774ad7590e0f93d47a8f6ad5e1f9db"},
+    {file = "fal_client-0.8.1.tar.gz", hash = "sha256:2c12cb0b0a327f4aa9c24fc7952722acf7aa059a1421a1c53283466f3bc07353"},
+]
+
+[package.dependencies]
+httpx = ">=0.21.0,<1"
+httpx-sse = ">=0.4.0,<0.5"
+
+[package.extras]
+dev = ["fal_client[docs,test]"]
+docs = ["sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
+test = ["pillow", "pytest", "pytest-asyncio", "pytest-mock"]
+
+[[package]]
 name = "fastapi"
 version = "0.115.12"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -620,6 +641,18 @@ cli = ["click (==8.*)", "pygments (==2.*)", "rich (>=10,<14)"]
 http2 = ["h2 (>=3,<5)"]
 socks = ["socksio (==1.*)"]
 zstd = ["zstandard (>=0.18.0)"]
+
+[[package]]
+name = "httpx-sse"
+version = "0.4.3"
+description = "Consume Server-Sent Event (SSE) messages with HTTPX."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc"},
+    {file = "httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"},
+]
 
 [[package]]
 name = "hyperframe"
@@ -1875,4 +1908,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12 <4.0"
-content-hash = "b142ad842b27eeae77b20b86443fd341ecbad0bf105fe92500819f3d66acfd83"
+content-hash = "3b4297c7ea80f91ee6110c215d36403108cde8597d22b8781c07af7164a32434"

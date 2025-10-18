@@ -45,3 +45,20 @@ class ProjectUpdateRequest(BaseModel):
     snapshot: Optional[Dict[str, Any]] = Field(
         default=None, description="The snapshot data for the project."
     )
+
+
+class IconGenerationRequest(BaseModel):
+    prompt: str = Field(
+        description="Text prompt describing the 3D icon to generate."
+    )
+    style: Optional[str] = Field(
+        default="3D render, isometric, clean background",
+        description="Style modifier for the icon generation."
+    )
+
+
+class IconGenerationResponse(BaseModel):
+    image_url: str = Field(description="URL of the generated 3D icon image.")
+    image_data: Optional[str] = Field(
+        default=None, description="Base64 encoded image data if requested."
+    )
