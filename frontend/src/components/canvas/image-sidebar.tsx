@@ -17,6 +17,8 @@ interface ImageSidebarProps {
   isListening: boolean;
   isGenerating: boolean;
   error: string | null;
+  mode: 'agent' | 'ask';
+  onModeChange: (mode: 'agent' | 'ask') => void;
   onTranscriptChange: (value: string) => void;
   onToggleListening: () => void;
   onGenerate: () => void;
@@ -32,6 +34,8 @@ export function ImageSidebar({
   isListening,
   isGenerating,
   error,
+  mode,
+  onModeChange,
   onTranscriptChange,
   onToggleListening,
   onGenerate,
@@ -39,7 +43,6 @@ export function ImageSidebar({
   onRejectImage,
   canvasReady,
 }: ImageSidebarProps) {
-  const [activeTab, setActiveTab] = useState('agent');
   const [isThinking, setIsThinking] = useState(false);
 
   // Handle thinking -> sketching transition
@@ -150,7 +153,11 @@ export function ImageSidebar({
         <div className="border-t border-gray-200" />
 
         {/* Tabs for Agent Mode and Ask Mode */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-4">
+        <Tabs
+          value={mode}
+          onValueChange={(value) => onModeChange(value as 'agent' | 'ask')}
+          className="flex flex-col gap-4"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="agent">Agent Mode</TabsTrigger>
             <TabsTrigger value="ask">Ask Mode</TabsTrigger>
