@@ -16,7 +16,7 @@ An AI-powered whiteboard assistant that proactively completes and refines educat
 
 **Link:** [https://arxiv.org/html/2512.01234v2](https://arxiv.org/html/2512.01234v2)
 
-<img width="1000" height="750" alt="Image" src="https://github.com/user-attachments/assets/33cd330d-f674-4c74-8991-a9972d6601e0" />
+<img width="500" height="400" alt="Image" src="https://github.com/user-attachments/assets/33cd330d-f674-4c74-8991-a9972d6601e0" />
 
 ### Abstract
 
