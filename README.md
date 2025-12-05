@@ -1,10 +1,12 @@
-# DrawDash
+![License](https://img.shields.io/github/license/foloup/foloup)
+
+# DrawDash ✏️
 
 **Proactive Agentic Whiteboards: Enhancing Diagrammatic Learning**
 
 An AI-powered whiteboard assistant that proactively completes and refines educational diagrams through multimodal understanding.
 
-## Paper
+## Paper 📜
 
 **Title:** Proactive Agentic Whiteboards: Enhancing Diagrammatic Learning
 
@@ -31,3 +33,10 @@ DrawDash consists of two main components: a backend API and a frontend web appli
 - **Backend Setup:** See [backend/README.md](backend/README.md)
 - **Frontend Setup:** See [frontend/README.md](frontend/README.md)
 
+## Contact
+
+If you have any questions or feedback, please feel free to reach out to us at [suveen.te1[at]gmail.com](mailto:suveen.te1@gmail.com).
+
+## License
+
+The software code is licensed under the MIT License.
