@@ -1,6 +1,6 @@
 [![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg)](https://arxiv.org/abs/2512.01234v2)
 ![License](https://img.shields.io/github/license/foloup/foloup)
-[![Demo](https://img.shields.io/twitter/follow/SuveenE?style=social)](https://x.com/SuveenE/status/1979942916572561527?s=20)
+[![Demo](https://img.shields.io/badge/demo-drawdash-blue)](https://x.com/SuveenE/status/1979942916572561527?s=20)
 
 # DrawDash ✏️
 
