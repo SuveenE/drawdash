@@ -3,7 +3,6 @@ import os
 import uuid
 
 from supabase import AsyncClientOptions
-
 # from supabase import AsyncClientOptions
 from supabase._async.client import AsyncClient as Client
 from supabase._async.client import create_client

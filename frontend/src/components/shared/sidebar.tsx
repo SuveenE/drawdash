@@ -113,6 +113,11 @@ const SidebarView: React.FC<SidebarViewProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // Hide sidebar for /create route
+  if (pathname === '/create') {
+    return <div className="h-screen w-screen">{children}</div>;
+  }
+
   // Determine the current tab based on the pathname
   const getCurrentTab = (): SidebarTab | null => {
     if (pathname === '/projects' || pathname?.startsWith('/projects/')) {

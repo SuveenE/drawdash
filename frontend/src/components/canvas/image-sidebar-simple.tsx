@@ -1,0 +1,291 @@
+'use client';
+
+import Image from 'next/image';
+
+import { useEffect, useState } from 'react';
+
+import { Binoculars, Brain, Mic, Paintbrush } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface ImageSidebarSimpleProps {
+  generatedImage: string | null;
+  imageUsed: boolean;
+  transcript: string;
+  isListening: boolean;
+  isGenerating: boolean;
+  error: string | null;
+  mode: 'agent' | 'ask';
+  onModeChange: (mode: 'agent' | 'ask') => void;
+  onTranscriptChange: (value: string) => void;
+  onToggleListening: () => void;
+  onGenerate: () => void;
+  onAcceptImage: () => void;
+  onRejectImage: () => void;
+  canvasReady: boolean;
+}
+
+export function ImageSidebarSimple({
+  generatedImage,
+  imageUsed,
+  transcript,
+  isListening,
+  isGenerating,
+  error,
+  mode,
+  onModeChange,
+  onTranscriptChange,
+  onToggleListening,
+  onGenerate,
+  onAcceptImage,
+  onRejectImage,
+  canvasReady,
+}: ImageSidebarSimpleProps) {
+  const [isThinking, setIsThinking] = useState(false);
+
+  // Handle thinking -> sketching transition
+  useEffect(() => {
+    if (isGenerating) {
+      setIsThinking(true);
+      const timer = setTimeout(() => {
+        setIsThinking(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsThinking(false);
+    }
+  }, [isGenerating]);
+
+  return (
+    <>
+      <style jsx>{`
+        @keyframes scale-pulse {
+          0%,
+          100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.15);
+          }
+        }
+        .animate-scale-pulse {
+          animation: scale-pulse 2s ease-in-out infinite;
+        }
+        @keyframes wave {
+          0%,
+          100% {
+            height: 4px;
+          }
+          50% {
+            height: 16px;
+          }
+        }
+        .wave-bar {
+          width: 3px;
+          background: currentColor;
+          border-radius: 2px;
+          animation: wave 0.8s ease-in-out infinite;
+        }
+        .wave-bar:nth-child(1) {
+          animation-delay: 0s;
+        }
+        .wave-bar:nth-child(2) {
+          animation-delay: 0.1s;
+        }
+        .wave-bar:nth-child(3) {
+          animation-delay: 0.2s;
+        }
+        @keyframes blink {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.4;
+          }
+        }
+        .animate-blink {
+          animation: blink 1.5s ease-in-out infinite;
+        }
+      `}</style>
+      <div className="flex w-96 flex-col gap-6 border-l border-gray-200 bg-white">
+        {/* Header - Empty for simple version */}
+        <div className="border-b border-gray-200 bg-white p-3">
+          {/* Intentionally left empty - no navigation links */}
+        </div>
+
+        <div className="flex flex-col gap-6 px-6">
+          {/* Generated Image Display */}
+          <div className="flex flex-col gap-2">
+            <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-gray-300 bg-gray-50">
+              {generatedImage ? (
+                <Image
+                  src={`data:image/png;base64,${generatedImage}`}
+                  alt="Generated"
+                  fill
+                  className="object-contain"
+                />
+              ) : (
+                <span className="text-sm text-gray-500">No Diagram generated yet</span>
+              )}
+            </div>
+            {!imageUsed && generatedImage && (
+              <div className="flex gap-4">
+                <Button
+                  onClick={onAcceptImage}
+                  variant="outline"
+                  className="flex-1 !border-green-600 !bg-green-50 text-green-600 shadow-sm hover:!bg-green-100 hover:text-green-700"
+                  disabled={!canvasReady}
+                >
+                  Accept (Tab)
+                </Button>
+                <Button
+                  onClick={onRejectImage}
+                  variant="outline"
+                  className="flex-1 !border-red-600 !bg-red-50 text-red-600 shadow-sm hover:!bg-red-100 hover:text-red-700"
+                  disabled={!canvasReady}
+                >
+                  Reject (Esc)
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-200" />
+
+          {/* Tabs for Agent Mode and Ask Mode */}
+          <Tabs
+            value={mode}
+            onValueChange={(value) => onModeChange(value as 'agent' | 'ask')}
+            className="flex flex-col gap-4"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="agent">Agent Mode</TabsTrigger>
+              <TabsTrigger value="ask">Ask Mode</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="agent" className="mt-0 flex flex-col gap-6">
+              {/* Agent Mode Description */}
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+                <p className="text-sm text-blue-900">
+                  Agent mode listens to your explanations and proactively suggests diagram changes.
+                </p>
+              </div>
+
+              {/* Microphone Control */}
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={onToggleListening}
+                  className="flex-shrink-0 cursor-pointer transition-transform hover:scale-110"
+                >
+                  {isListening ? (
+                    <div className="flex h-8 w-8 animate-pulse items-center justify-center rounded-full bg-red-500 shadow-lg">
+                      <Mic className="h-4 w-4 text-white" />
+                    </div>
+                  ) : (
+                    <div className="animate-scale-pulse flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 shadow-md hover:bg-blue-600">
+                      <Mic className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                </button>
+                {/* Waveform Animation or Start Message */}
+                {isListening ? (
+                  <div className="flex items-center gap-1 text-red-500">
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                    <div className="wave-bar"></div>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-600">Press to start</span>
+                )}
+              </div>
+
+              {/* Live Transcript Display */}
+              {isListening && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm font-medium text-gray-900">
+                    <span>Live Transcript</span>
+                    {isListening && !isGenerating && (
+                      <div className="animate-blink flex items-center gap-1 text-blue-600">
+                        <Binoculars className="h-3.5 w-3.5" />
+                        <span className="text-xs">observing</span>
+                      </div>
+                    )}
+                    {isGenerating && isThinking && (
+                      <div className="animate-blink flex items-center gap-1 text-blue-600">
+                        <Brain className="h-3.5 w-3.5" />
+                        <span className="text-xs">thinking</span>
+                      </div>
+                    )}
+                    {isGenerating && !isThinking && (
+                      <div className="animate-blink flex items-center gap-1 text-blue-600">
+                        <Paintbrush className="h-3.5 w-3.5" />
+                        <span className="text-xs">sketching</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="max-h-[350px] min-h-[150px] w-full overflow-y-auto rounded-md bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700">
+                    {transcript}
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {error && (
+                <div className="rounded-md border border-red-500 bg-red-50 p-3 text-sm text-red-900">
+                  {error}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="ask" className="mt-0 flex flex-col gap-6">
+              {/* Ask Mode Description */}
+              <div className="rounded-md border border-purple-200 bg-purple-50 p-3">
+                <p className="text-sm text-purple-900">
+                  Ask mode lets you type a prompt, then generate/edit the diagram manually.
+                </p>
+              </div>
+
+              {/* Text Input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-900">
+                  What do you want to change?
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Type your prompt here..."
+                  value={transcript}
+                  onChange={(e) => onTranscriptChange(e.target.value)}
+                  className="w-full border-0 bg-white text-black shadow-none focus-visible:ring-0"
+                />
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="rounded-md border border-red-500 bg-red-50 p-3 text-sm text-red-900">
+                  {error}
+                </div>
+              )}
+
+              {/* Generate Button */}
+              <Button
+                onClick={onGenerate}
+                className="w-full"
+                size="lg"
+                disabled={isGenerating || !transcript.trim()}
+              >
+                {isGenerating ? 'Generating...' : 'Generate'}
+              </Button>
+            </TabsContent>
+          </Tabs>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+        </div>
+      </div>
+    </>
+  );
+}

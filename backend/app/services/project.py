@@ -6,13 +6,9 @@ import fal_client
 from openai import OpenAI
 from supabase._async.client import AsyncClient as Client
 
-from app.models.project import (
-    IconGenerationRequest,
-    IconGenerationResponse,
-    Project,
-    ProjectCreateRequest,
-    ProjectUpdateRequest,
-)
+from app.models.project import (IconGenerationRequest, IconGenerationResponse,
+                                Project, ProjectCreateRequest,
+                                ProjectUpdateRequest)
 
 log = logging.getLogger(__name__)
 
@@ -250,7 +246,8 @@ class ProjectService:
 
         try:
             # Construct the full prompt with style modifiers
-            full_prompt = f"The following is a text prompt or a conversation about a 2 or 3 word topic: {request.prompt}, Draw a 3D smooth icon png with the following style: {request.style}. Also make sure you don't include text in the image."
+            # Keep it simple and direct for better AI understanding
+            full_prompt = f"A clean 3D icon representing '{request.prompt}'. Style: {request.style}. No text or labels in the image."
 
             # Define callback to log queue updates
             def on_queue_update(update):
